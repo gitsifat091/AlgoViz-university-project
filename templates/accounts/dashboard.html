@@ -35,6 +35,25 @@
 <div class="fade-up-3">
   <div class="section-title">🔍 Graph & Pathfinding Algorithms</div>
   <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:16px;">
+
+    <a href="{% url 'bfs' %}" style="text-decoration:none;">
+      <div class="card" style="border-color:rgba(0,229,255,0.3); cursor:pointer; position:relative; overflow:hidden;">
+        <div style="position:absolute; top:0; left:0; width:3px; height:100%; background:var(--cyan);"></div>
+        <div style="font-size:32px; margin-bottom:12px;">🌊</div>
+        <div style="font-family:var(--font-head); font-size:13px; font-weight:700; color:var(--text); letter-spacing:1px; margin-bottom:8px;">BFS</div>
+        <div class="tag tag-cyan">LIVE</div>
+      </div>
+    </a>
+
+    <a href="{% url 'dfs' %}" style="text-decoration:none;">
+      <div class="card" style="border-color:rgba(0,255,163,0.3); cursor:pointer; position:relative; overflow:hidden;">
+        <div style="position:absolute; top:0; left:0; width:3px; height:100%; background:var(--green);"></div>
+        <div style="font-size:32px; margin-bottom:12px;">🔍</div>
+        <div style="font-family:var(--font-head); font-size:13px; font-weight:700; color:var(--text); letter-spacing:1px; margin-bottom:8px;">DFS</div>
+        <div class="tag tag-green">LIVE</div>
+      </div>
+    </a>
+
     {% for name, emoji in algorithms %}
     <div class="card" style="opacity:0.55; cursor:not-allowed; position:relative; overflow:hidden;">
       <div style="position:absolute; top:0; left:0; width:3px; height:100%; background:var(--border);"></div>
@@ -43,6 +62,7 @@
       <div class="tag tag-soon">COMING SOON</div>
     </div>
     {% endfor %}
+
   </div>
 </div>
 

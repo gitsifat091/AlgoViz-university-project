@@ -47,10 +47,9 @@ def dashboard(request):
         ("Quick Sort",     "⚡", "quick_sort"),
     ]
     algorithms = [
-        ("BFS", "🌊"), ("DFS", "🔍"), ("Dijkstra", "🗺️"),
-        ("Bellman-Ford", "⚖️"), ("Floyd-Warshall", "🔄"),
-        ("Best First", "⭐"), ("DLS", "📏"),
-        ("UCS", "💰"), ("A* Search", "🎯"),
+        ("Dijkstra", "🗺️"), ("Bellman-Ford", "⚖️"),
+        ("Floyd-Warshall", "🔄"), ("Best First", "⭐"),
+        ("DLS", "📏"), ("UCS", "💰"), ("A* Search", "🎯"),
     ]
     return render(request, 'accounts/dashboard.html', {
         'sorting_algorithms': sorting_algorithms,
