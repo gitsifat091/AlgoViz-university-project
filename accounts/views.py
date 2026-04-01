@@ -47,7 +47,6 @@ def dashboard(request):
         ("Quick Sort",     "⚡", "quick_sort"),
     ]
     algorithms = [
-        ("Dijkstra", "🗺️"), ("Bellman-Ford", "⚖️"),
         ("Floyd-Warshall", "🔄"), ("Best First", "⭐"),
         ("DLS", "📏"), ("UCS", "💰"), ("A* Search", "🎯"),
     ]

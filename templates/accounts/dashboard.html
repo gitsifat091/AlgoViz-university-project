@@ -54,6 +54,24 @@
       </div>
     </a>
 
+    <a href="{% url 'dijkstra' %}" style="text-decoration:none;">
+    <div class="card" style="border-color:rgba(255,209,102,0.3); cursor:pointer; position:relative; overflow:hidden;">
+        <div style="position:absolute; top:0; left:0; width:3px; height:100%; background:var(--yellow);"></div>
+        <div style="font-size:32px; margin-bottom:12px;">🗺️</div>
+        <div style="font-family:var(--font-head); font-size:13px; font-weight:700; color:var(--text); letter-spacing:1px; margin-bottom:8px;">DIJKSTRA</div>
+        <div class="tag" style="background:rgba(255,209,102,0.12);color:var(--yellow);border:1px solid rgba(255,209,102,0.3);">LIVE</div>
+    </div>
+    </a>
+
+    <a href="{% url 'bellman_ford' %}" style="text-decoration:none;">
+    <div class="card" style="border-color:rgba(168,85,247,0.3); cursor:pointer; position:relative; overflow:hidden;">
+        <div style="position:absolute; top:0; left:0; width:3px; height:100%; background:#a855f7;"></div>
+        <div style="font-size:32px; margin-bottom:12px;">⚖️</div>
+        <div style="font-family:var(--font-head); font-size:13px; font-weight:700; color:var(--text); letter-spacing:1px; margin-bottom:8px;">BELLMAN-FORD</div>
+        <div class="tag" style="background:rgba(168,85,247,0.12);color:#a855f7;border:1px solid rgba(168,85,247,0.3);">LIVE</div>
+    </div>
+    </a>
+
     {% for name, emoji in algorithms %}
     <div class="card" style="opacity:0.55; cursor:not-allowed; position:relative; overflow:hidden;">
       <div style="position:absolute; top:0; left:0; width:3px; height:100%; background:var(--border);"></div>

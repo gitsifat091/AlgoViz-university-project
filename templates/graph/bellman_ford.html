@@ -1,0 +1,253 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="fade-up" style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:28px; flex-wrap:wrap; gap:16px;">
+  <div>
+    <div class="tag tag-cyan" style="margin-bottom:12px;">GRAPH ALGORITHM</div>
+    <h1 style="font-family:var(--font-head); font-size:26px; font-weight:900; letter-spacing:2px;">
+      ⚖️ <span style="color:var(--cyan);" class="glow">BELLMAN-FORD</span>
+    </h1>
+    <p style="color:var(--muted); font-size:12px; margin-top:6px;">{{ algo_desc }}</p>
+  </div>
+  <a href="{% url 'dashboard' %}" class="btn-ghost" style="font-size:12px;">← BACK</a>
+</div>
+
+<!-- Input -->
+<div class="card fade-up-2" style="margin-bottom:20px;">
+  <form method="POST">
+    {% csrf_token %}
+    <div style="display:grid; grid-template-columns:1fr auto auto; gap:16px; align-items:end;">
+      <div>
+        <label style="display:block; font-size:10px; letter-spacing:2px; color:var(--muted); margin-bottom:8px;">EDGES WITH WEIGHTS — format: a-b:weight</label>
+        <input type="text" name="edges" value="{{ edges_str }}">
+      </div>
+      <div style="min-width:90px;">
+        <label style="display:block; font-size:10px; letter-spacing:2px; color:var(--muted); margin-bottom:8px;">NODES</label>
+        <input type="number" name="nodes" value="{{ node_count }}" min="2" max="12" style="width:100%;">
+      </div>
+      <div style="min-width:90px;">
+        <label style="display:block; font-size:10px; letter-spacing:2px; color:var(--muted); margin-bottom:8px;">START</label>
+        <input type="number" name="start" value="{{ start_node }}" min="0" style="width:100%;">
+      </div>
+    </div>
+    <button type="submit" class="btn-primary" style="margin-top:16px; letter-spacing:2px;">VISUALIZE</button>
+  </form>
+</div>
+
+<!-- Main Layout -->
+<div style="display:grid; grid-template-columns:1fr 300px; gap:20px; margin-bottom:20px;" class="fade-up-3">
+
+  <!-- Canvas -->
+  <div class="card" style="padding:0; overflow:hidden;">
+    <div style="padding:14px 20px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+      <span style="font-family:var(--font-head); font-size:11px; letter-spacing:2px; color:var(--muted);">WEIGHTED GRAPH</span>
+      <div style="display:flex; gap:14px; font-size:11px; flex-wrap:wrap;">
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#00e5ff;margin-right:4px;"></span>Checking</span>
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#a855f7;margin-right:4px;"></span>Relaxed</span>
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#00d4a0;margin-right:4px;"></span>Settled</span>
+      </div>
+    </div>
+    <canvas id="graphCanvas" style="width:100%; display:block;"></canvas>
+  </div>
+
+  <!-- Side Panel -->
+  <div style="display:flex; flex-direction:column; gap:14px;">
+
+    <!-- Iteration badge -->
+    <div class="card" style="text-align:center; border-color:rgba(255,209,102,0.25);">
+      <div style="font-size:10px; letter-spacing:2px; color:var(--muted); margin-bottom:6px;">ITERATION</div>
+      <span style="font-family:var(--font-head); font-size:32px; color:var(--yellow);" id="iter-num">0</span>
+      <span style="color:var(--muted); font-size:12px;"> / {{ node_count|add:"-1" }}</span>
+    </div>
+
+    <!-- Status -->
+    <div class="card" style="border-color:rgba(0,229,255,0.2);">
+      <div style="font-size:10px; letter-spacing:2px; color:var(--muted); margin-bottom:8px;">STATUS</div>
+      <div id="status-text" style="font-size:11px; color:var(--yellow); line-height:1.7; min-height:52px;">Ready...</div>
+    </div>
+
+    <!-- Distance Table -->
+    <div class="card">
+      <div style="font-size:10px; letter-spacing:2px; color:var(--cyan); margin-bottom:10px;">DISTANCE TABLE</div>
+      <div id="dist-table"></div>
+    </div>
+
+    <!-- Progress -->
+    <div class="card" style="text-align:center;">
+      <div style="font-size:10px; letter-spacing:2px; color:var(--muted); margin-bottom:8px;">PROGRESS</div>
+      <span style="font-family:var(--font-head); font-size:28px; color:var(--cyan);" id="step-num">0</span>
+      <span style="color:var(--muted);"> / </span>
+      <span style="font-family:var(--font-head); font-size:16px; color:var(--muted);" id="total-steps">0</span>
+    </div>
+
+  </div>
+</div>
+
+<!-- Controls -->
+<div class="fade-up-4" style="display:flex; gap:10px; justify-content:center; align-items:center; flex-wrap:wrap;">
+  <button onclick="prevStep()" class="btn-ghost" style="padding:10px 20px;">⏮ PREV</button>
+  <button onclick="togglePlay()" id="play-btn" class="btn-primary" style="padding:12px 36px; font-size:15px; letter-spacing:3px;">▶ PLAY</button>
+  <button onclick="nextStep()" class="btn-ghost" style="padding:10px 20px;">NEXT ⏭</button>
+  <button onclick="resetViz()" class="btn-ghost" style="padding:10px 20px;">↺ RESET</button>
+  <div style="display:flex; align-items:center; gap:10px; margin-left:10px;">
+    <span style="font-size:10px; color:var(--muted); letter-spacing:2px;">SPEED</span>
+    <input type="range" id="speed-slider" min="200" max="1500" value="700"
+      style="width:100px; accent-color:var(--cyan);">
+  </div>
+</div>
+
+<script>
+const steps     = {{ steps|safe }};
+const edgeList  = {{ edges|safe }};
+const nodeCount = {{ node_count }};
+const startNode = {{ start_node }};
+
+let current = 0, playing = false, timer = null;
+
+const canvas = document.getElementById('graphCanvas');
+const ctx    = canvas.getContext('2d');
+
+function resizeCanvas() {
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width  = rect.width;
+  canvas.height = Math.max(360, Math.min(rect.width * 0.58, 460));
+  drawStep(steps[current]);
+}
+
+function getNodePositions() {
+  const cx = canvas.width/2, cy = canvas.height/2;
+  const r  = Math.min(cx, cy) * 0.70;
+  return Array.from({length: nodeCount}, (_, i) => {
+    const angle = (2*Math.PI*i/nodeCount) - Math.PI/2;
+    return { x: cx + r*Math.cos(angle), y: cy + r*Math.sin(angle) };
+  });
+}
+
+function drawStep(step) {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const pos   = getNodePositions();
+  const nodeR = Math.max(22, Math.min(28, canvas.width/(nodeCount*2.8)));
+
+  // Edges
+  edgeList.forEach(([a, b, weight]) => {
+    const isCurrent = step.current_edge &&
+      ((step.current_edge[0]===a&&step.current_edge[1]===b)||
+       (step.current_edge[0]===b&&step.current_edge[1]===a));
+    const isRelaxed = step.relaxed_edge &&
+      ((step.relaxed_edge[0]===a&&step.relaxed_edge[1]===b)||
+       (step.relaxed_edge[0]===b&&step.relaxed_edge[1]===a));
+    const bothSettled = step.visited.includes(a) && step.visited.includes(b);
+
+    ctx.beginPath();
+    ctx.moveTo(pos[a].x, pos[a].y);
+    ctx.lineTo(pos[b].x, pos[b].y);
+    ctx.setLineDash([]);
+    if (isRelaxed)       { ctx.strokeStyle='#a855f7'; ctx.lineWidth=3.5; }
+    else if (isCurrent)  { ctx.strokeStyle='#00E5FF'; ctx.lineWidth=3; }
+    else if (bothSettled){ ctx.strokeStyle='rgba(0,212,160,0.35)'; ctx.lineWidth=2; }
+    else                 { ctx.strokeStyle='#1A3A5C'; ctx.lineWidth=1.5; ctx.setLineDash([5,4]); }
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Weight bubble
+    const mx=(pos[a].x+pos[b].x)/2, my=(pos[a].y+pos[b].y)/2;
+    ctx.fillStyle='#0a1628';
+    ctx.beginPath(); ctx.arc(mx,my,11,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = isRelaxed?'#a855f7':isCurrent?'#00E5FF':'#3a6080';
+    ctx.font='bold 11px "JetBrains Mono",monospace';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(weight, mx, my);
+  });
+
+  // Nodes
+  for (let i=0; i<nodeCount; i++) {
+    const {x,y} = pos[i];
+    const isSettled = step.visited.includes(i);
+    const isCurEdge = step.current_edge && (step.current_edge[0]===i||step.current_edge[1]===i);
+    const isRelaxed = step.relaxed_edge && step.relaxed_edge.includes(i);
+
+    if (isCurEdge||isRelaxed) {
+      ctx.beginPath(); ctx.arc(x,y,nodeR+11,0,Math.PI*2);
+      const grd=ctx.createRadialGradient(x,y,nodeR,x,y,nodeR+14);
+      grd.addColorStop(0,isRelaxed?'rgba(168,85,247,0.4)':'rgba(0,229,255,0.35)');
+      grd.addColorStop(1,'transparent');
+      ctx.fillStyle=grd; ctx.fill();
+    }
+
+    ctx.beginPath(); ctx.arc(x,y,nodeR,0,Math.PI*2);
+    let fill='#0d1f38', stroke='#1a3a5c', sw=1.5;
+    if (step.done && !step.negative_cycle) { fill='#004d30'; stroke='#00D4A0'; sw=2.5; }
+    else if (step.negative_cycle)          { fill='#4d0000'; stroke='#ff4444'; sw=2.5; }
+    else if (isRelaxed)  { fill='#2d1b4e'; stroke='#a855f7'; sw=2.5; }
+    else if (isCurEdge)  { fill='#003d55'; stroke='#00E5FF'; sw=2.5; }
+    else if (isSettled)  { fill='#003d28'; stroke='#00D4A0'; sw=2; }
+    if (i===startNode)   { stroke='#FFD166'; sw=Math.max(sw,2.5); }
+
+    ctx.fillStyle=fill; ctx.fill();
+    ctx.strokeStyle=stroke; ctx.lineWidth=sw; ctx.stroke();
+
+    ctx.fillStyle = isRelaxed?'#a855f7':isCurEdge?'#00E5FF':isSettled?'#00D4A0':'#8BAABF';
+    ctx.font=`bold ${Math.round(nodeR*0.65)}px "JetBrains Mono",monospace`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(i,x,y);
+
+    // Distance below node
+    const d = step.dist?step.dist[i]:-1;
+    ctx.fillStyle = d===-1?'#3a5a70':isRelaxed?'#a855f7':isSettled?'#00D4A0':'#FFD166';
+    ctx.font=`bold ${Math.round(nodeR*0.52)}px "JetBrains Mono",monospace`;
+    ctx.fillText(d===-1?'∞':d, x, y+nodeR+13);
+
+    if (i===startNode) {
+      ctx.fillStyle='#FFD166'; ctx.font=`${Math.round(nodeR*0.45)}px sans-serif`;
+      ctx.fillText('★',x,y-nodeR-9);
+    }
+  }
+}
+
+function updatePanel(step) {
+  const el = document.getElementById('status-text');
+  el.textContent = step.status||'';
+  el.style.color = step.negative_cycle?'#ff4444':step.done?'#00D4A0':step.relaxed_edge?'#a855f7':step.current_edge?'#00E5FF':'#FFD166';
+
+  document.getElementById('iter-num').textContent = step.iteration||0;
+
+  // Distance table
+  const dt = document.getElementById('dist-table');
+  if (step.dist) {
+    dt.innerHTML = Object.entries(step.dist).map(([node,d])=>{
+      const isCurEdge = step.current_edge&&(step.current_edge[0]===parseInt(node)||step.current_edge[1]===parseInt(node));
+      const isRelaxed = step.relaxed_edge&&step.relaxed_edge.includes(parseInt(node));
+      const isSettled = step.visited.includes(parseInt(node));
+      const color = isRelaxed?'#a855f7':isCurEdge?'#00E5FF':isSettled?'#00D4A0':d===-1?'#3a5a70':'#FFD166';
+      return `<div style="display:flex;justify-content:space-between;align-items:center;
+        padding:5px 8px;margin-bottom:4px;border-radius:6px;
+        background:${isRelaxed?'#2d1b4e':isCurEdge?'#003d55':isSettled?'#003d28':'#0d1f38'};
+        border:1px solid ${isRelaxed?'#a855f7':isCurEdge?'#00E5FF':isSettled?'#00D4A0':'#1a3a5c'};">
+        <span style="font-size:11px;color:#8baabf;">${parseInt(node)===startNode?'★':''} Node ${node}</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:bold;color:${color};">${d===-1?'∞':d}</span>
+      </div>`;
+    }).join('');
+  }
+
+  document.getElementById('step-num').textContent  = current;
+  document.getElementById('total-steps').textContent = steps.length-1;
+}
+
+function render(step) { drawStep(step); updatePanel(step); }
+function getDelay() { return 1700 - parseInt(document.getElementById('speed-slider').value); }
+function nextStep() { if(current<steps.length-1){current++;render(steps[current]);}else stopPlay(); }
+function prevStep() { if(current>0){current--;render(steps[current]);} }
+function resetViz() { stopPlay();current=0;render(steps[0]); }
+function togglePlay() { playing?stopPlay():startPlay(); }
+function startPlay() {
+  playing=true; document.getElementById('play-btn').textContent='⏸ PAUSE';
+  timer=setInterval(()=>{if(current<steps.length-1){current++;render(steps[current]);}else stopPlay();},getDelay());
+}
+function stopPlay() {
+  playing=false; document.getElementById('play-btn').textContent='▶ PLAY'; clearInterval(timer);
+}
+
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas(); render(steps[0]);
+</script>
+{% endblock %}
