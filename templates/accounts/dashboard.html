@@ -17,23 +17,15 @@
   <div class="section-title">📊 Sorting Algorithms</div>
   <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:16px; margin-bottom:48px;">
 
-    <!-- Bubble Sort — ACTIVE -->
-    <a href="{% url 'bubble_sort' %}" style="text-decoration:none;">
+    {% for name, emoji, url_name in sorting_algorithms %}
+    <a href="{% url url_name %}" style="text-decoration:none;">
       <div class="card" style="border-color:rgba(0,229,255,0.3); cursor:pointer; position:relative; overflow:hidden;">
         <div style="position:absolute; top:0; left:0; width:3px; height:100%; background:var(--cyan);"></div>
-        <div style="font-size:32px; margin-bottom:12px;">🫧</div>
-        <div style="font-family:var(--font-head); font-size:13px; font-weight:700; color:var(--text); letter-spacing:1px; margin-bottom:8px;">BUBBLE SORT</div>
+        <div style="font-size:32px; margin-bottom:12px;">{{ emoji }}</div>
+        <div style="font-family:var(--font-head); font-size:13px; font-weight:700; color:var(--text); letter-spacing:1px; margin-bottom:8px;">{{ name|upper }}</div>
         <div class="tag tag-cyan">LIVE</div>
       </div>
     </a>
-
-    {% for name, emoji in sorting_algorithms %}
-    <div class="card" style="opacity:0.55; cursor:not-allowed; position:relative; overflow:hidden;">
-      <div style="position:absolute; top:0; left:0; width:3px; height:100%; background:var(--border);"></div>
-      <div style="font-size:32px; margin-bottom:12px;">{{ emoji }}</div>
-      <div style="font-family:var(--font-head); font-size:13px; font-weight:700; color:var(--muted); letter-spacing:1px; margin-bottom:8px;">{{ name|upper }}</div>
-      <div class="tag tag-soon">COMING SOON</div>
-    </div>
     {% endfor %}
 
   </div>

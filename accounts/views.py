@@ -40,10 +40,11 @@ def logout_view(request):
 @login_required
 def dashboard(request):
     sorting_algorithms = [
-        ("Selection Sort", "🎯"),
-        ("Insertion Sort", "📥"),
-        ("Merge Sort", "🔀"),
-        ("Quick Sort", "⚡"),
+        ("Bubble Sort",    "🫧", "bubble_sort"),
+        ("Selection Sort", "🎯", "selection_sort"),
+        ("Insertion Sort", "📥", "insertion_sort"),
+        ("Merge Sort",     "🔀", "merge_sort"),
+        ("Quick Sort",     "⚡", "quick_sort"),
     ]
     algorithms = [
         ("BFS", "🌊"), ("DFS", "🔍"), ("Dijkstra", "🗺️"),
@@ -52,6 +53,6 @@ def dashboard(request):
         ("UCS", "💰"), ("A* Search", "🎯"),
     ]
     return render(request, 'accounts/dashboard.html', {
-        'algorithms': algorithms,
         'sorting_algorithms': sorting_algorithms,
+        'algorithms': algorithms,
     })

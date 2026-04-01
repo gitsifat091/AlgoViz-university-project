@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="fade-up" style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:32px; flex-wrap:wrap; gap:16px;">
+  <div>
+    <div class="tag tag-cyan" style="margin-bottom:12px;">SORTING</div>
+    <h1 style="font-family:var(--font-head); font-size:28px; font-weight:900; letter-spacing:2px;">
+      {{ algo_emoji }} <span style="color:var(--cyan);" class="glow">{{ algo_name }}</span>
+    </h1>
+    <p style="color:var(--muted); font-size:12px; margin-top:6px;">{{ algo_desc }}</p>
+  </div>
+  <a href="{% url 'dashboard' %}" class="btn-ghost" style="font-size:12px;">← BACK</a>
+</div>
+
+<!-- Input -->
+<div class="card fade-up-2" style="margin-bottom:24px;">
+  <form method="POST" style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+    {% csrf_token %}
+    <div style="flex:1; min-width:220px;">
+      <label style="display:block; font-size:10px; letter-spacing:2px; color:var(--muted); margin-bottom:8px;">INPUT ARRAY (comma separated, max 10)</label>
+      <input type="text" name="numbers" value="{{ initial|join:',' }}" placeholder="e.g. 5,3,8,1,9,2">
+    </div>
+    <button type="submit" class="btn-primary" style="margin-top:20px; letter-spacing:2px;">VISUALIZE</button>
+  </form>
+</div>
+
+<!-- Bars -->
+<div class="card fade-up-3" style="margin-bottom:20px; min-height:280px; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; padding:30px;">
+  <div id="array-container" style="display:flex; justify-content:center; align-items:flex-end; gap:8px; width:100%; height:220px;"></div>
+</div>
+
+<!-- Status -->
+<div class="fade-up-4" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:20px;">
+  <div style="display:flex; gap:20px; align-items:center; flex-wrap:wrap;">
+    <span style="font-size:12px; color:var(--muted);">
+      STEP <strong style="color:var(--cyan); font-size:16px;" id="step-num">0</strong>
+      / <strong id="total-steps">0</strong>
+    </span>
+    <span id="status-text" style="font-size:12px; color:var(--yellow); font-weight:600; letter-spacing:1px;">READY</span>
+  </div>
+  <div style="display:flex; gap:16px; font-size:11px; flex-wrap:wrap;">
+    <span><span style="color:var(--cyan);">█</span> COMPARING</span>
+    <span><span style="color:var(--orange);">█</span> SWAPPING</span>
+    <span><span style="color:var(--green);">█</span> SORTED/PLACED</span>
+    <span><span style="color:#a855f7);">█</span> PIVOT</span>
+    <span><span style="color:var(--border);">█</span> UNSORTED</span>
+  </div>
+</div>
+
+<!-- Controls -->
+<div class="fade-up-4" style="display:flex; gap:10px; justify-content:center; align-items:center; flex-wrap:wrap;">
+  <button onclick="prevStep()" class="btn-ghost" style="padding:10px 20px;">⏮ PREV</button>
+  <button onclick="togglePlay()" id="play-btn" class="btn-primary" style="padding:12px 36px; font-size:15px; letter-spacing:3px;">▶ PLAY</button>
+  <button onclick="nextStep()" class="btn-ghost" style="padding:10px 20px;">NEXT ⏭</button>
+  <button onclick="resetViz()" class="btn-ghost" style="padding:10px 20px;">↺ RESET</button>
+  <div style="display:flex; align-items:center; gap:10px; margin-left:10px;">
+    <span style="font-size:10px; color:var(--muted); letter-spacing:2px;">SPEED</span>
+    <input type="range" id="speed-slider" min="100" max="1000" value="500"
+      style="width:100px; accent-color:var(--cyan);">
+  </div>
+</div>
+
+<script>
+const steps = {{ steps|safe }};
+let current = 0, playing = false, timer = null;
+
+function getDelay() { return 1100 - parseInt(document.getElementById('speed-slider').value); }
+
+function renderStep(step) {
+  const container = document.getElementById('array-container');
+  container.innerHTML = '';
+  const arr = step.array;
+  const maxVal = Math.max(...arr);
+
+  arr.forEach((val, i) => {
+    let bg = '#1a3a5c';
+    let glow = '';
+
+    if (step.done) {
+      bg = 'var(--green)'; glow = '0 0 16px rgba(0,255,163,0.4)';
+    } else {
+      // green: sorted regions
+      if (step.sorted_from !== undefined && i >= step.sorted_from) bg = 'var(--green)';
+      if (step.sorted_until !== undefined && i < step.sorted_until) bg = 'var(--green)';
+      if (step.merging && step.merging.includes(i)) bg = '#1e4a7a';
+      // cyan: comparing
+      if (step.comparing && step.comparing.includes(i)) { bg = 'var(--cyan)'; glow = '0 0 20px rgba(0,229,255,0.6)'; }
+      // orange: swapped/shifting/placed
+      if (step.swapped && step.swapped.includes(i)) { bg = 'var(--orange)'; glow = '0 0 20px rgba(255,140,66,0.6)'; }
+      if (step.shifting === i) { bg = 'var(--orange)'; }
+      if (step.placed === i) { bg = 'var(--green)'; glow = '0 0 16px rgba(0,255,163,0.5)'; }
+      if (step.pivot_placed === i) { bg = 'var(--green)'; glow = '0 0 16px rgba(0,255,163,0.5)'; }
+      // purple: pivot
+      if (step.pivot === i) { bg = '#a855f7'; glow = '0 0 20px rgba(168,85,247,0.5)'; }
+      if (step.current === i) { bg = 'var(--yellow)'; glow = '0 0 16px rgba(255,209,102,0.4)'; }
+      if (step.min_idx === i) { bg = 'var(--yellow)'; }
+    }
+
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'display:flex; flex-direction:column; align-items:center; gap:6px; flex:1; max-width:65px;';
+
+    const bar = document.createElement('div');
+    const h = Math.max((val / maxVal) * 180, 24);
+    bar.style.cssText = `
+      width:100%; height:${h}px; background:${bg};
+      border-radius:6px 6px 0 0; box-shadow:${glow};
+      transition:height 0.2s ease, background 0.2s, box-shadow 0.2s;
+      display:flex; align-items:flex-start; justify-content:center;
+      padding-top:6px; font-family:var(--font-head);
+      font-size:13px; font-weight:700; color:var(--bg);
+    `;
+    bar.textContent = val;
+
+    const idx = document.createElement('div');
+    idx.style.cssText = 'font-size:10px; color:var(--muted); letter-spacing:1px;';
+    idx.textContent = i;
+
+    wrap.appendChild(bar);
+    wrap.appendChild(idx);
+    container.appendChild(wrap);
+  });
+
+  document.getElementById('step-num').textContent = current;
+  document.getElementById('total-steps').textContent = steps.length - 1;
+
+  let txt = '', col = 'var(--yellow)';
+  if (step.done) { txt = '✅ SORTING COMPLETE!'; col = 'var(--green)'; }
+  else if (step.pivot_placed !== undefined) { txt = `📌 PIVOT PLACED AT [${step.pivot_placed}]`; col = 'var(--green)'; }
+  else if (step.swapped) { txt = `🔄 SWAPPED [${step.swapped[0]}] ↔ [${step.swapped[1]}]`; col = 'var(--orange)'; }
+  else if (step.comparing) { txt = `👀 COMPARING [${step.comparing[0]}] VS [${step.comparing[1]}]`; col = 'var(--cyan)'; }
+  else if (step.placed !== undefined) { txt = `✅ PLACED AT [${step.placed}]`; col = 'var(--green)'; }
+  else if (step.current !== undefined) { txt = `📌 INSERTING ELEMENT AT [${step.current}]`; col = 'var(--yellow)'; }
+  else if (step.merging) { txt = `🔀 MERGING RANGE [${step.merging[0]}..${step.merging[step.merging.length-1]}]`; col = 'var(--cyan)'; }
+  else if (step.pivot !== undefined) { txt = `⭐ PIVOT SELECTED: [${step.pivot}]`; col = '#a855f7'; }
+
+  const el = document.getElementById('status-text');
+  el.textContent = txt;
+  el.style.color = col;
+}
+
+function nextStep() { if (current < steps.length-1) { current++; renderStep(steps[current]); } else stopPlay(); }
+function prevStep() { if (current > 0) { current--; renderStep(steps[current]); } }
+function resetViz() { stopPlay(); current=0; renderStep(steps[0]); }
+function togglePlay() { playing ? stopPlay() : startPlay(); }
+function startPlay() {
+  playing = true;
+  document.getElementById('play-btn').textContent = '⏸ PAUSE';
+  timer = setInterval(() => { if(current < steps.length-1){current++;renderStep(steps[current]);}else stopPlay(); }, getDelay());
+}
+function stopPlay() {
+  playing = false;
+  document.getElementById('play-btn').textContent = '▶ PLAY';
+  clearInterval(timer);
+}
+renderStep(steps[0]);
+</script>
+{% endblock %}
