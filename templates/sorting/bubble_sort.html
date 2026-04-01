@@ -1,136 +1,139 @@
 {% extends 'base.html' %}
 {% block content %}
 
-<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-  <h1 style="color:#00c8ff;">🫧 Bubble Sort Visualizer</h1>
-  <a href="{% url 'dashboard' %}" style="color:#8baabf; text-decoration:none;">← Back</a>
+<!-- Header -->
+<div class="fade-up" style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:32px; flex-wrap:wrap; gap:16px;">
+  <div>
+    <div class="tag tag-cyan" style="margin-bottom:12px;">SORTING</div>
+    <h1 style="font-family:var(--font-head); font-size:28px; font-weight:900; letter-spacing:2px;">
+      🫧 BUBBLE <span style="color:var(--cyan);" class="glow">SORT</span>
+    </h1>
+    <p style="color:var(--muted); font-size:12px; margin-top:6px;">Repeatedly swaps adjacent elements if they are in the wrong order</p>
+  </div>
+  <a href="{% url 'dashboard' %}" class="btn-ghost" style="font-size:12px;">← BACK</a>
 </div>
 
-<!-- Input Form -->
-<div style="background:#132038; border:1px solid #1e3a5f; border-radius:10px; padding:20px; margin-bottom:25px;">
-  <form method="POST" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+<!-- Input -->
+<div class="card fade-up-2" style="margin-bottom:24px;">
+  <form method="POST" style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
     {% csrf_token %}
-    <label style="color:#8baabf;">Numbers (comma separated):</label>
-    <input type="text" name="numbers" value="{{ initial|join:',' }}"
-      style="padding:8px 12px; background:#0a1628; border:1px solid #1e3a5f; border-radius:6px; color:#fff; font-size:14px; width:250px;">
-    <button type="submit"
-      style="padding:8px 20px; background:#00c8ff; color:#0a1628; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">
-      Visualize
-    </button>
+    <div style="flex:1; min-width:220px;">
+      <label style="display:block; font-size:10px; letter-spacing:2px; color:var(--muted); margin-bottom:8px;">INPUT ARRAY (comma separated, max 10)</label>
+      <input type="text" name="numbers" value="{{ initial|join:',' }}" placeholder="e.g. 5,3,8,1,9,2">
+    </div>
+    <button type="submit" class="btn-primary" style="margin-top:20px; letter-spacing:2px;">VISUALIZE</button>
   </form>
 </div>
 
-<!-- Visualization Area -->
-<div style="background:#132038; border:1px solid #1e3a5f; border-radius:10px; padding:30px; margin-bottom:20px;">
-  <div id="array-container" style="display:flex; justify-content:center; align-items:flex-end; gap:10px; height:220px;"></div>
+<!-- Visualizer -->
+<div class="card fade-up-3" style="margin-bottom:20px; min-height:280px; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; padding:30px;">
+  <div id="array-container" style="display:flex; justify-content:center; align-items:flex-end; gap:8px; width:100%; height:220px;"></div>
 </div>
 
-<!-- Info Bar -->
-<div style="background:#0a1628; border:1px solid #1e3a5f; border-radius:8px; padding:12px 20px; margin-bottom:20px; display:flex; gap:30px; flex-wrap:wrap;">
-  <span>Step: <strong id="step-num" style="color:#00c8ff;">0</strong> / <strong id="total-steps" style="color:#00c8ff;">0</strong></span>
-  <span id="status-text" style="color:#ffd166;">Ready</span>
-  <div style="margin-left:auto; display:flex; gap:10px;">
-    <span style="color:#00c8ff;">■</span> Comparing
-    <span style="color:#ff8c42;">■</span> Swapping
-    <span style="color:#00d4a0;">■</span> Sorted
-    <span style="color:#8baabf;">■</span> Unsorted
+<!-- Status bar -->
+<div class="fade-up-4" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:20px;">
+  <div style="display:flex; gap:20px; align-items:center; flex-wrap:wrap;">
+    <span style="font-size:12px; color:var(--muted);">
+      STEP <strong style="color:var(--cyan); font-size:16px;" id="step-num">0</strong>
+      <span style="color:var(--muted);">/ </span>
+      <strong id="total-steps">0</strong>
+    </span>
+    <span id="status-text" style="font-size:12px; color:var(--yellow); font-weight:600; letter-spacing:1px;">READY</span>
+  </div>
+  <div style="display:flex; gap:16px; font-size:11px; align-items:center; flex-wrap:wrap;">
+    <span><span style="color:var(--cyan);">█</span> COMPARING</span>
+    <span><span style="color:var(--orange);">█</span> SWAPPING</span>
+    <span><span style="color:var(--green);">█</span> SORTED</span>
+    <span><span style="color:var(--border);">█</span> UNSORTED</span>
   </div>
 </div>
 
 <!-- Controls -->
-<div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
-  <button onclick="prevStep()" style="padding:10px 25px; background:#1e3a5f; color:#fff; border:none; border-radius:8px; cursor:pointer; font-size:15px;">⏮ Prev</button>
-  <button onclick="togglePlay()" id="play-btn" style="padding:10px 30px; background:#00c8ff; color:#0a1628; border:none; border-radius:8px; cursor:pointer; font-size:15px; font-weight:bold;">▶ Play</button>
-  <button onclick="nextStep()" style="padding:10px 25px; background:#1e3a5f; color:#fff; border:none; border-radius:8px; cursor:pointer; font-size:15px;">Next ⏭</button>
-  <button onclick="resetViz()" style="padding:10px 25px; background:#1e3a5f; color:#fff; border:none; border-radius:8px; cursor:pointer; font-size:15px;">↺ Reset</button>
-  <input type="range" id="speed-slider" min="100" max="1000" value="500"
-    style="width:120px;" title="Speed">
-  <label style="color:#8baabf; line-height:40px;">Speed</label>
+<div class="fade-up-4" style="display:flex; gap:10px; justify-content:center; align-items:center; flex-wrap:wrap;">
+  <button onclick="prevStep()" class="btn-ghost" style="padding:10px 20px;">⏮ PREV</button>
+  <button onclick="togglePlay()" id="play-btn" class="btn-primary" style="padding:12px 36px; font-size:15px; letter-spacing:3px;">▶ PLAY</button>
+  <button onclick="nextStep()" class="btn-ghost" style="padding:10px 20px;">NEXT ⏭</button>
+  <button onclick="resetViz()" class="btn-ghost" style="padding:10px 20px;">↺ RESET</button>
+  <div style="display:flex; align-items:center; gap:10px; margin-left:10px;">
+    <span style="font-size:10px; color:var(--muted); letter-spacing:2px;">SPEED</span>
+    <input type="range" id="speed-slider" min="100" max="1000" value="500"
+      style="width:100px; accent-color:var(--cyan);">
+  </div>
 </div>
 
 <script>
 const steps = {{ steps|safe }};
-let current = 0;
-let playing = false;
-let timer = null;
+let current = 0, playing = false, timer = null;
 
-function getDelay() {
-  return 1100 - parseInt(document.getElementById('speed-slider').value);
-}
+function getDelay() { return 1100 - parseInt(document.getElementById('speed-slider').value); }
 
-function render(step) {
+function renderStep(step) {
   const container = document.getElementById('array-container');
   container.innerHTML = '';
   const arr = step.array;
   const maxVal = Math.max(...arr);
 
   arr.forEach((val, i) => {
-    let color = '#1e3a5f';
-    if (step.done) color = '#00d4a0';
-    else if (step.sorted_from !== undefined && i >= step.sorted_from) color = '#00d4a0';
-    if (step.comparing && step.comparing.includes(i)) color = '#00c8ff';
-    if (step.swapped && step.swapped.includes(i)) color = '#ff8c42';
+    let bg = 'var(--border)';
+    let glow = '';
+    if (step.done) { bg = 'var(--green)'; glow = '0 0 16px rgba(0,255,163,0.5)'; }
+    else if (step.sorted_from !== undefined && i >= step.sorted_from) { bg = 'var(--green)'; }
+    if (step.comparing && step.comparing.includes(i)) { bg = 'var(--cyan)'; glow = '0 0 20px rgba(0,229,255,0.6)'; }
+    if (step.swapped && step.swapped.includes(i)) { bg = 'var(--orange)'; glow = '0 0 20px rgba(255,140,66,0.6)'; }
+
+    const wrap = document.createElement('div');
+    wrap.style.cssText = `display:flex; flex-direction:column; align-items:center; gap:6px; flex:1; max-width:60px;`;
 
     const bar = document.createElement('div');
+    const h = Math.max((val / maxVal) * 180, 24);
     bar.style.cssText = `
-      width: 45px;
-      height: ${Math.max((val / maxVal) * 180, 20)}px;
-      background: ${color};
+      width: 100%; height: ${h}px;
+      background: ${bg};
       border-radius: 6px 6px 0 0;
+      box-shadow: ${glow};
+      transition: height 0.25s ease, background 0.2s, box-shadow 0.2s;
       display: flex; align-items: flex-start; justify-content: center;
       padding-top: 6px;
-      color: #fff; font-weight: bold; font-size: 14px;
-      transition: height 0.2s, background 0.2s;
+      font-family: var(--font-head); font-size: 13px; font-weight: 700; color: var(--bg);
     `;
     bar.textContent = val;
-    container.appendChild(bar);
+
+    const idx = document.createElement('div');
+    idx.style.cssText = 'font-size:10px; color:var(--muted); letter-spacing:1px;';
+    idx.textContent = i;
+
+    wrap.appendChild(bar);
+    wrap.appendChild(idx);
+    container.appendChild(wrap);
   });
 
   document.getElementById('step-num').textContent = current;
   document.getElementById('total-steps').textContent = steps.length - 1;
 
-  let status = '';
-  if (step.done) status = '✅ Sorting Complete!';
-  else if (step.swapped) status = `🔄 Swapped positions ${step.swapped[0]} and ${step.swapped[1]}`;
-  else if (step.comparing) status = `👀 Comparing positions ${step.comparing[0]} and ${step.comparing[1]}`;
-  document.getElementById('status-text').textContent = status;
+  let statusText = '', statusColor = 'var(--yellow)';
+  if (step.done) { statusText = '✅ SORTING COMPLETE!'; statusColor = 'var(--green)'; }
+  else if (step.swapped) { statusText = `🔄 SWAPPED [ ${step.swapped[0]} ] ↔ [ ${step.swapped[1]} ]`; statusColor = 'var(--orange)'; }
+  else if (step.comparing) { statusText = `👀 COMPARING [ ${step.comparing[0]} ] VS [ ${step.comparing[1]} ]`; statusColor = 'var(--cyan)'; }
+  const el = document.getElementById('status-text');
+  el.textContent = statusText;
+  el.style.color = statusColor;
 }
 
-function nextStep() {
-  if (current < steps.length - 1) { current++; render(steps[current]); }
-  else stopPlay();
-}
-
-function prevStep() {
-  if (current > 0) { current--; render(steps[current]); }
-}
-
-function resetViz() {
-  stopPlay();
-  current = 0;
-  render(steps[0]);
-}
-
-function togglePlay() {
-  if (playing) stopPlay();
-  else startPlay();
-}
-
+function nextStep() { if (current < steps.length-1) { current++; renderStep(steps[current]); } else stopPlay(); }
+function prevStep() { if (current > 0) { current--; renderStep(steps[current]); } }
+function resetViz() { stopPlay(); current=0; renderStep(steps[0]); }
+function togglePlay() { playing ? stopPlay() : startPlay(); }
 function startPlay() {
-  playing = true;
-  document.getElementById('play-btn').textContent = '⏸ Pause';
-  timer = setInterval(() => {
-    if (current < steps.length - 1) { current++; render(steps[current]); }
-    else stopPlay();
-  }, getDelay());
+  playing=true;
+  document.getElementById('play-btn').textContent='⏸ PAUSE';
+  timer = setInterval(() => { if(current<steps.length-1){current++;renderStep(steps[current]);}else stopPlay(); }, getDelay());
 }
-
 function stopPlay() {
-  playing = false;
-  document.getElementById('play-btn').textContent = '▶ Play';
+  playing=false;
+  document.getElementById('play-btn').textContent='▶ PLAY';
   clearInterval(timer);
 }
 
-render(steps[0]);
+renderStep(steps[0]);
 </script>
 {% endblock %}

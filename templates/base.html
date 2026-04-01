@@ -1,34 +1,235 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AlgoViz</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', sans-serif; background: #0a1628; color: #fff; min-height: 100vh; }
-        nav { background: #0f2040; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #00c8ff; }
-        nav .logo { font-size: 24px; font-weight: bold; color: #00c8ff; }
-        nav a { color: #ccc; text-decoration: none; margin-left: 20px; }
-        nav a:hover { color: #00c8ff; }
-        .container { max-width: 1100px; margin: 0 auto; padding: 30px 20px; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AlgoViz</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=JetBrains+Mono:wght@300;400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:       #050d1a;
+      --bg2:      #0a1628;
+      --card:     #0d1f38;
+      --border:   #1a3a5c;
+      --cyan:     #00e5ff;
+      --cyan2:    #00b4d8;
+      --green:    #00ffa3;
+      --orange:   #ff8c42;
+      --yellow:   #ffd166;
+      --text:     #e0f0ff;
+      --muted:    #5a7a99;
+      --font-head: 'Orbitron', monospace;
+      --font-body: 'JetBrains Mono', monospace;
+    }
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Animated grid background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,229,255,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,229,255,0.04) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Glowing orb top-right */
+    body::after {
+      content: '';
+      position: fixed;
+      top: -200px; right: -200px;
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(0,229,255,0.08) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* NAVBAR */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(5,13,26,0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 40px;
+      height: 64px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+
+    .nav-logo {
+      font-family: var(--font-head);
+      font-size: 22px;
+      font-weight: 900;
+      color: var(--cyan);
+      text-shadow: 0 0 20px rgba(0,229,255,0.5);
+      letter-spacing: 2px;
+      text-decoration: none;
+    }
+    .nav-logo span { color: var(--text); }
+
+    .nav-right {
+      display: flex; align-items: center; gap: 20px;
+    }
+    .nav-user {
+      font-size: 12px; color: var(--muted);
+      border: 1px solid var(--border);
+      padding: 6px 14px; border-radius: 20px;
+      background: var(--card);
+    }
+    .nav-user strong { color: var(--cyan); }
+
+    .nav-btn {
+      font-family: var(--font-body);
+      font-size: 12px; font-weight: 600;
+      color: var(--bg);
+      background: var(--cyan);
+      border: none; padding: 8px 18px;
+      border-radius: 6px; cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s;
+      letter-spacing: 1px;
+    }
+    .nav-btn:hover { background: var(--cyan2); transform: translateY(-1px); box-shadow: 0 4px 20px rgba(0,229,255,0.3); }
+
+    .nav-link {
+      font-size: 12px; color: var(--muted);
+      text-decoration: none; letter-spacing: 1px;
+      transition: color 0.2s;
+    }
+    .nav-link:hover { color: var(--cyan); }
+
+    /* MAIN */
+    main {
+      position: relative; z-index: 1;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px 24px;
+    }
+
+    /* CARDS */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      transition: border-color 0.3s, box-shadow 0.3s;
+    }
+    .card:hover {
+      border-color: rgba(0,229,255,0.3);
+      box-shadow: 0 8px 32px rgba(0,229,255,0.08);
+    }
+
+    /* BUTTONS */
+    .btn-primary {
+      display: inline-block;
+      font-family: var(--font-body);
+      font-size: 13px; font-weight: 600;
+      background: var(--cyan); color: var(--bg);
+      border: none; padding: 10px 24px;
+      border-radius: 8px; cursor: pointer;
+      text-decoration: none; letter-spacing: 1px;
+      transition: all 0.2s;
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(0,229,255,0.35); }
+
+    .btn-ghost {
+      display: inline-block;
+      font-family: var(--font-body);
+      font-size: 13px;
+      background: transparent; color: var(--muted);
+      border: 1px solid var(--border); padding: 10px 24px;
+      border-radius: 8px; cursor: pointer;
+      text-decoration: none; letter-spacing: 1px;
+      transition: all 0.2s;
+    }
+    .btn-ghost:hover { color: var(--cyan); border-color: var(--cyan); }
+
+    /* INPUTS */
+    input[type=text], input[type=password] {
+      width: 100%;
+      font-family: var(--font-body);
+      font-size: 13px;
+      background: var(--bg2); color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px; padding: 12px 16px;
+      outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    input[type=text]:focus, input[type=password]:focus {
+      border-color: var(--cyan);
+      box-shadow: 0 0 0 3px rgba(0,229,255,0.1);
+    }
+
+    /* TAG */
+    .tag {
+      display: inline-block;
+      font-size: 10px; font-weight: 600;
+      letter-spacing: 2px;
+      padding: 3px 10px; border-radius: 4px;
+    }
+    .tag-cyan { background: rgba(0,229,255,0.12); color: var(--cyan); border: 1px solid rgba(0,229,255,0.25); }
+    .tag-green { background: rgba(0,255,163,0.12); color: var(--green); border: 1px solid rgba(0,255,163,0.25); }
+    .tag-soon { background: rgba(90,122,153,0.15); color: var(--muted); border: 1px solid var(--border); }
+
+    /* GLOW TEXT */
+    .glow { text-shadow: 0 0 20px rgba(0,229,255,0.6); }
+
+    /* SECTION TITLE */
+    .section-title {
+      font-family: var(--font-head);
+      font-size: 13px; font-weight: 700;
+      letter-spacing: 3px; color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 20px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .section-title::after {
+      content: '';
+      flex: 1; height: 1px;
+      background: linear-gradient(90deg, var(--border), transparent);
+    }
+
+    /* SCROLLBAR */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--cyan2); }
+
+    /* FADE IN */
+    @keyframes fadeUp {
+      from { opacity:0; transform: translateY(16px); }
+      to   { opacity:1; transform: translateY(0); }
+    }
+    .fade-up { animation: fadeUp 0.5s ease both; }
+    .fade-up-2 { animation: fadeUp 0.5s 0.1s ease both; }
+    .fade-up-3 { animation: fadeUp 0.5s 0.2s ease both; }
+    .fade-up-4 { animation: fadeUp 0.5s 0.3s ease both; }
+  </style>
 </head>
 <body>
-    <nav>
-        <span class="logo">⚙ AlgoViz</span>
-        <div>
-            {% if user.is_authenticated %}
-                <span>Hello, {{ user.username }} 👋</span>
-                <a href="{% url 'logout' %}">Logout</a>
-            {% else %}
-                <a href="{% url 'login' %}">Login</a>
-                <a href="{% url 'signup' %}">Sign Up</a>
-            {% endif %}
-        </div>
-    </nav>
-    <div class="container">
-        {% block content %}{% endblock %}
+  <nav>
+    <a href="{% url 'dashboard' %}" class="nav-logo">ALGO<span>VIZ</span></a>
+    <div class="nav-right">
+      {% if user.is_authenticated %}
+        <div class="nav-user">logged in as <strong>{{ user.username }}</strong></div>
+        <a href="{% url 'logout' %}" class="nav-btn">LOGOUT</a>
+      {% else %}
+        <a href="{% url 'login' %}" class="nav-link">LOGIN</a>
+        <a href="{% url 'signup' %}" class="nav-btn">SIGN UP</a>
+      {% endif %}
     </div>
+  </nav>
+  <main>
+    {% block content %}{% endblock %}
+  </main>
 </body>
 </html>

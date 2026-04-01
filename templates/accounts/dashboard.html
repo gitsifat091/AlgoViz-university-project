@@ -1,47 +1,57 @@
 {% extends 'base.html' %}
 {% block content %}
-<h1 style="color:#00c8ff; margin-bottom:8px;">Welcome, {{ user.username }}! 🎉</h1>
-<p style="color:#8baabf; margin-bottom:35px;">কোন algorithm দেখতে চাও?</p>
 
-<h2 style="color:#fff; margin-bottom:20px;">📊 Sorting Algorithms</h2>
-<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:15px; margin-bottom:35px;">
-
-  <div style="background:#132038; border:1px solid #1e3a5f; border-radius:10px; padding:20px; text-align:center;">
-    <div style="font-size:28px; margin-bottom:8px;">🫧</div>
-    <div style="font-weight:bold;">Bubble Sort</div>
-    <a href="{% url 'bubble_sort' %}" style="display:block; margin-top:12px; background:#00c8ff; color:#0a1628; padding:8px; border-radius:6px; text-decoration:none; font-size:13px;">Visualize →</a>
-  </div>
-
-  <div style="background:#132038; border:1px solid #1e3a5f; border-radius:10px; padding:20px; text-align:center;">
-    <div style="font-size:28px; margin-bottom:8px;">🔢</div>
-    <div style="font-weight:bold;">Selection Sort</div>
-    <a href="#" style="display:block; margin-top:12px; background:#1e3a5f; color:#8baabf; padding:8px; border-radius:6px; text-decoration:none; font-size:13px;">Coming Soon</a>
-  </div>
-
-  <div style="background:#132038; border:1px solid #1e3a5f; border-radius:10px; padding:20px; text-align:center;">
-    <div style="font-size:28px; margin-bottom:8px;">📥</div>
-    <div style="font-weight:bold;">Insertion Sort</div>
-    <a href="#" style="display:block; margin-top:12px; background:#1e3a5f; color:#8baabf; padding:8px; border-radius:6px; text-decoration:none; font-size:13px;">Coming Soon</a>
-  </div>
-
-  <div style="background:#132038; border:1px solid #1e3a5f; border-radius:10px; padding:20px; text-align:center;">
-    <div style="font-size:28px; margin-bottom:8px;">🔀</div>
-    <div style="font-weight:bold;">Merge Sort</div>
-    <a href="#" style="display:block; margin-top:12px; background:#1e3a5f; color:#8baabf; padding:8px; border-radius:6px; text-decoration:none; font-size:13px;">Coming Soon</a>
-  </div>
-
-  <div style="background:#132038; border:1px solid #1e3a5f; border-radius:10px; padding:20px; text-align:center;">
-    <div style="font-size:28px; margin-bottom:8px;">⚡</div>
-    <div style="font-weight:bold;">Quick Sort</div>
-    <a href="#" style="display:block; margin-top:12px; background:#1e3a5f; color:#8baabf; padding:8px; border-radius:6px; text-decoration:none; font-size:13px;">Coming Soon</a>
-  </div>
-
+<!-- Hero -->
+<div class="fade-up" style="margin-bottom:48px;">
+  <div class="tag tag-cyan" style="margin-bottom:14px;">DASHBOARD</div>
+  <h1 style="font-family:var(--font-head); font-size:36px; font-weight:900; letter-spacing:2px; line-height:1.1;">
+    HELLO, <span style="color:var(--cyan);" class="glow">{{ user.username|upper }}</span>
+  </h1>
+  <p style="color:var(--muted); font-size:13px; margin-top:10px;">
+    Select an algorithm below to start the visualization
+  </p>
 </div>
 
-<h2 style="color:#fff; margin-bottom:20px;">🔍 Graph Algorithms</h2>
-<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:15px;">
+<!-- Sorting Section -->
+<div class="fade-up-2">
+  <div class="section-title">📊 Sorting Algorithms</div>
+  <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:16px; margin-bottom:48px;">
 
-  {% for name, emoji in algorithms %}
-  <div style="background:#132038; border:1px solid #00d4a0; border-radius:10px; padding:20px; text-align:center;">
-    <div style="font-size:28px; margin-bottom:8px;">{{ emoji }}</div>
-    <div style="f
+    <!-- Bubble Sort — ACTIVE -->
+    <a href="{% url 'bubble_sort' %}" style="text-decoration:none;">
+      <div class="card" style="border-color:rgba(0,229,255,0.3); cursor:pointer; position:relative; overflow:hidden;">
+        <div style="position:absolute; top:0; left:0; width:3px; height:100%; background:var(--cyan);"></div>
+        <div style="font-size:32px; margin-bottom:12px;">🫧</div>
+        <div style="font-family:var(--font-head); font-size:13px; font-weight:700; color:var(--text); letter-spacing:1px; margin-bottom:8px;">BUBBLE SORT</div>
+        <div class="tag tag-cyan">LIVE</div>
+      </div>
+    </a>
+
+    {% for name, emoji in sorting_algorithms %}
+    <div class="card" style="opacity:0.55; cursor:not-allowed; position:relative; overflow:hidden;">
+      <div style="position:absolute; top:0; left:0; width:3px; height:100%; background:var(--border);"></div>
+      <div style="font-size:32px; margin-bottom:12px;">{{ emoji }}</div>
+      <div style="font-family:var(--font-head); font-size:13px; font-weight:700; color:var(--muted); letter-spacing:1px; margin-bottom:8px;">{{ name|upper }}</div>
+      <div class="tag tag-soon">COMING SOON</div>
+    </div>
+    {% endfor %}
+
+  </div>
+</div>
+
+<!-- Graph Section -->
+<div class="fade-up-3">
+  <div class="section-title">🔍 Graph & Pathfinding Algorithms</div>
+  <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:16px;">
+    {% for name, emoji in algorithms %}
+    <div class="card" style="opacity:0.55; cursor:not-allowed; position:relative; overflow:hidden;">
+      <div style="position:absolute; top:0; left:0; width:3px; height:100%; background:var(--border);"></div>
+      <div style="font-size:32px; margin-bottom:12px;">{{ emoji }}</div>
+      <div style="font-family:var(--font-head); font-size:12px; font-weight:700; color:var(--muted); letter-spacing:1px; margin-bottom:8px;">{{ name|upper }}</div>
+      <div class="tag tag-soon">COMING SOON</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+{% endblock %}

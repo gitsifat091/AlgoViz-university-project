@@ -1,21 +1,43 @@
 {% extends 'base.html' %}
 {% block content %}
-<div style="max-width:400px; margin:60px auto; background:#132038; padding:40px; border-radius:12px; border:1px solid #1e3a5f;">
-    <h2 style="color:#00d4a0; margin-bottom:25px; text-align:center;">📝 Sign Up</h2>
-    <form method="POST">
+<div style="min-height:80vh; display:flex; align-items:center; justify-content:center; padding:20px 0;">
+  <div style="width:100%; max-width:420px;" class="fade-up">
+
+    <div style="text-align:center; margin-bottom:36px;">
+      <div class="tag tag-green" style="margin-bottom:16px;">NEW ACCOUNT</div>
+      <h1 style="font-family:var(--font-head); font-size:30px; font-weight:900; color:var(--green); letter-spacing:2px;">
+        JOIN ALGOVIZ
+      </h1>
+      <p style="color:var(--muted); font-size:12px; margin-top:8px;">Create your account to visualize algorithms</p>
+    </div>
+
+    <div class="card" style="border-color:rgba(0,255,163,0.2);">
+      <form method="POST">
         {% csrf_token %}
         {% for field in form %}
-            <div style="margin-bottom:15px;">
-                <label style="display:block; margin-bottom:5px; color:#8baabf;">{{ field.label }}</label>
-                {{ field }}
-                {% if field.errors %}
-                    <small style="color:#ff6b6b;">{{ field.errors|join:", " }}</small>
-                {% endif %}
-            </div>
+        <div style="margin-bottom:20px;">
+          <label style="display:block; font-size:11px; font-weight:600; color:var(--muted); letter-spacing:2px; margin-bottom:8px; text-transform:uppercase;">
+            {{ field.label }}
+          </label>
+          {{ field }}
+          {% if field.errors %}
+            <p style="color:#ff6b6b; font-size:11px; margin-top:6px;">{{ field.errors|join:", " }}</p>
+          {% endif %}
+          {% if field.help_text %}
+            <p style="color:var(--muted); font-size:10px; margin-top:5px; line-height:1.5;">{{ field.help_text }}</p>
+          {% endif %}
+        </div>
         {% endfor %}
-        <button type="submit" style="width:100%; padding:12px; background:#00d4a0; color:#0a1628; border:none; border-radius:8px; font-size:16px; font-weight:bold; cursor:pointer;">Create Account</button>
-    </form>
-    <p style="text-align:center; margin-top:20px; color:#8baabf;">Already account আছে? <a href="{% url 'login' %}" style="color:#00c8ff;">Login</a></p>
+        <button type="submit" class="btn-primary" style="width:100%; padding:14px; font-size:14px; letter-spacing:3px; margin-top:8px; background:var(--green);">
+          CREATE ACCOUNT →
+        </button>
+      </form>
+
+      <div style="margin-top:24px; padding-top:20px; border-top:1px solid var(--border); text-align:center;">
+        <span style="color:var(--muted); font-size:12px;">Already have an account? </span>
+        <a href="{% url 'login' %}" style="color:var(--cyan); font-size:12px; text-decoration:none; font-weight:600;">Login →</a>
+      </div>
+    </div>
+  </div>
 </div>
-<style>input { width:100%; padding:10px; background:#0a1628; border:1px solid #1e3a5f; border-radius:6px; color:#fff; font-size:14px; }</style>
 {% endblock %}
