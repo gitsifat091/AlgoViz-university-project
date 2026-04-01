@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+  <h1 style="color:#00c8ff;">🫧 Bubble Sort Visualizer</h1>
+  <a href="{% url 'dashboard' %}" style="color:#8baabf; text-decoration:none;">← Back</a>
+</div>
+
+<!-- Input Form -->
+<div style="background:#132038; border:1px solid #1e3a5f; border-radius:10px; padding:20px; margin-bottom:25px;">
+  <form method="POST" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+    {% csrf_token %}
+    <label style="color:#8baabf;">Numbers (comma separated):</label>
+    <input type="text" name="numbers" value="{{ initial|join:',' }}"
+      style="padding:8px 12px; background:#0a1628; border:1px solid #1e3a5f; border-radius:6px; color:#fff; font-size:14px; width:250px;">
+    <button type="submit"
+      style="padding:8px 20px; background:#00c8ff; color:#0a1628; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">
+      Visualize
+    </button>
+  </form>
+</div>
+
+<!-- Visualization Area -->
+<div style="background:#132038; border:1px solid #1e3a5f; border-radius:10px; padding:30px; margin-bottom:20px;">
+  <div id="array-container" style="display:flex; justify-content:center; align-items:flex-end; gap:10px; height:220px;"></div>
+</div>
+
+<!-- Info Bar -->
+<div style="background:#0a1628; border:1px solid #1e3a5f; border-radius:8px; padding:12px 20px; margin-bottom:20px; display:flex; gap:30px; flex-wrap:wrap;">
+  <span>Step: <strong id="step-num" style="color:#00c8ff;">0</strong> / <strong id="total-steps" style="color:#00c8ff;">0</strong></span>
+  <span id="status-text" style="color:#ffd166;">Ready</span>
+  <div style="margin-left:auto; display:flex; gap:10px;">
+    <span style="color:#00c8ff;">■</span> Comparing
+    <span style="color:#ff8c42;">■</span> Swapping
+    <span style="color:#00d4a0;">■</span> Sorted
+    <span style="color:#8baabf;">■</span> Unsorted
+  </div>
+</div>
+
+<!-- Controls -->
+<div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+  <button onclick="prevStep()" style="padding:10px 25px; background:#1e3a5f; color:#fff; border:none; border-radius:8px; cursor:pointer; font-size:15px;">⏮ Prev</button>
+  <button onclick="togglePlay()" id="play-btn" style="padding:10px 30px; background:#00c8ff; color:#0a1628; border:none; border-radius:8px; cursor:pointer; font-size:15px; font-weight:bold;">▶ Play</button>
+  <button onclick="nextStep()" style="padding:10px 25px; background:#1e3a5f; color:#fff; border:none; border-radius:8px; cursor:pointer; font-size:15px;">Next ⏭</button>
+  <button onclick="resetViz()" style="padding:10px 25px; background:#1e3a5f; color:#fff; border:none; border-radius:8px; cursor:pointer; font-size:15px;">↺ Reset</button>
+  <input type="range" id="speed-slider" min="100" max="1000" value="500"
+    style="width:120px;" title="Speed">
+  <label style="color:#8baabf; line-height:40px;">Speed</label>
+</div>
+
+<script>
+const steps = {{ steps|safe }};
+let current = 0;
+let playing = false;
+let timer = null;
+
+function getDelay() {
+  return 1100 - parseInt(document.getElementById('speed-slider').value);
+}
+
+function render(step) {
+  const container = document.getElementById('array-container');
+  container.innerHTML = '';
+  const arr = step.array;
+  const maxVal = Math.max(...arr);
+
+  arr.forEach((val, i) => {
+    let color = '#1e3a5f';
+    if (step.done) color = '#00d4a0';
+    else if (step.sorted_from !== undefined && i >= step.sorted_from) color = '#00d4a0';
+    if (step.comparing && step.comparing.includes(i)) color = '#00c8ff';
+    if (step.swapped && step.swapped.includes(i)) color = '#ff8c42';
+
+    const bar = document.createElement('div');
+    bar.style.cssText = `
+      width: 45px;
+      height: ${Math.max((val / maxVal) * 180, 20)}px;
+      background: ${color};
+      border-radius: 6px 6px 0 0;
+      display: flex; align-items: flex-start; justify-content: center;
+      padding-top: 6px;
+      color: #fff; font-weight: bold; font-size: 14px;
+      transition: height 0.2s, background 0.2s;
+    `;
+    bar.textContent = val;
+    container.appendChild(bar);
+  });
+
+  document.getElementById('step-num').textContent = current;
+  document.getElementById('total-steps').textContent = steps.length - 1;
+
+  let status = '';
+  if (step.done) status = '✅ Sorting Complete!';
+  else if (step.swapped) status = `🔄 Swapped positions ${step.swapped[0]} and ${step.swapped[1]}`;
+  else if (step.comparing) status = `👀 Comparing positions ${step.comparing[0]} and ${step.comparing[1]}`;
+  document.getElementById('status-text').textContent = status;
+}
+
+function nextStep() {
+  if (current < steps.length - 1) { current++; render(steps[current]); }
+  else stopPlay();
+}
+
+function prevStep() {
+  if (current > 0) { current--; render(steps[current]); }
+}
+
+function resetViz() {
+  stopPlay();
+  current = 0;
+  render(steps[0]);
+}
+
+function togglePlay() {
+  if (playing) stopPlay();
+  else startPlay();
+}
+
+function startPlay() {
+  playing = true;
+  document.getElementById('play-btn').textContent = '⏸ Pause';
+  timer = setInterval(() => {
+    if (current < steps.length - 1) { current++; render(steps[current]); }
+    else stopPlay();
+  }, getDelay());
+}
+
+function stopPlay() {
+  playing = false;
+  document.getElementById('play-btn').textContent = '▶ Play';
+  clearInterval(timer);
+}
+
+render(steps[0]);
+</script>
+{% endblock %}

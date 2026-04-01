@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block content %}
+<div style="max-width:400px; margin:60px auto; background:#132038; padding:40px; border-radius:12px; border:1px solid #1e3a5f;">
+    <h2 style="color:#00d4a0; margin-bottom:25px; text-align:center;">📝 Sign Up</h2>
+    <form method="POST">
+        {% csrf_token %}
+        {% for field in form %}
+            <div style="margin-bottom:15px;">
+                <label style="display:block; margin-bottom:5px; color:#8baabf;">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}
+                    <small style="color:#ff6b6b;">{{ field.errors|join:", " }}</small>
+                {% endif %}
+            </div>
+        {% endfor %}
+        <button type="submit" style="width:100%; padding:12px; background:#00d4a0; color:#0a1628; border:none; border-radius:8px; font-size:16px; font-weight:bold; cursor:pointer;">Create Account</button>
+    </form>
+    <p style="text-align:center; margin-top:20px; color:#8baabf;">Already account আছে? <a href="{% url 'login' %}" style="color:#00c8ff;">Login</a></p>
+</div>
+<style>input { width:100%; padding:10px; background:#0a1628; border:1px solid #1e3a5f; border-radius:6px; color:#fff; font-size:14px; }</style>
+{% endblock %}
