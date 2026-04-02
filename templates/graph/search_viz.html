@@ -1,0 +1,319 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="fade-up" style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:28px; flex-wrap:wrap; gap:16px;">
+  <div>
+    <div class="tag tag-cyan" style="margin-bottom:12px;">GRAPH ALGORITHM</div>
+    <h1 style="font-family:var(--font-head); font-size:24px; font-weight:900; letter-spacing:2px;">
+      {{ algo_emoji }} <span style="color:var(--cyan);" class="glow">{{ algo_name }}</span>
+    </h1>
+    <p style="color:var(--muted); font-size:12px; margin-top:6px;">{{ algo_desc }}</p>
+  </div>
+  <a href="{% url 'dashboard' %}" class="btn-ghost" style="font-size:12px;">← BACK</a>
+</div>
+
+<!-- Input -->
+<div class="card fade-up-2" style="margin-bottom:20px;">
+  <form method="POST">
+    {% csrf_token %}
+    <div style="display:grid; grid-template-columns:1fr repeat(4, auto); gap:14px; align-items:end; flex-wrap:wrap;">
+      <div>
+        <label style="display:block; font-size:10px; letter-spacing:2px; color:var(--muted); margin-bottom:8px;">
+          EDGES {% if show_cost %}(a-b:weight format){% endif %}
+        </label>
+        <input type="text" name="edges" value="{{ edges_str }}">
+      </div>
+      <div style="min-width:80px;">
+        <label style="display:block; font-size:10px; letter-spacing:2px; color:var(--muted); margin-bottom:8px;">NODES</label>
+        <input type="number" name="nodes" value="{{ node_count }}" min="2" max="12" style="width:100%;">
+      </div>
+      <div style="min-width:80px;">
+        <label style="display:block; font-size:10px; letter-spacing:2px; color:var(--muted); margin-bottom:8px;">START</label>
+        <input type="number" name="start" value="{{ start_node }}" min="0" style="width:100%;">
+      </div>
+      <div style="min-width:80px;">
+        <label style="display:block; font-size:10px; letter-spacing:2px; color:var(--muted); margin-bottom:8px;">GOAL</label>
+        <input type="number" name="goal" value="{{ goal_node }}" min="0" style="width:100%;">
+      </div>
+      {% if show_depth %}
+      <div style="min-width:80px;">
+        <label style="display:block; font-size:10px; letter-spacing:2px; color:var(--muted); margin-bottom:8px;">LIMIT</label>
+        <input type="number" name="limit" value="{{ depth_limit }}" min="1" max="10" style="width:100%;">
+      </div>
+      {% endif %}
+    </div>
+    <button type="submit" class="btn-primary" style="margin-top:16px; letter-spacing:2px;">VISUALIZE</button>
+  </form>
+</div>
+
+<!-- Main Layout -->
+<div style="display:grid; grid-template-columns:1fr 270px; gap:20px; margin-bottom:20px;" class="fade-up-3">
+
+  <!-- Canvas -->
+  <div class="card" style="padding:0; overflow:hidden;">
+    <div style="padding:14px 20px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+      <span style="font-family:var(--font-head); font-size:11px; letter-spacing:2px; color:var(--muted);">GRAPH</span>
+      <div style="display:flex; gap:14px; font-size:11px; flex-wrap:wrap;">
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#FFD166;margin-right:4px;"></span>Start ★</span>
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ff4444;margin-right:4px;"></span>Goal 🎯</span>
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#00e5ff;margin-right:4px;"></span>Current</span>
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#00d4a0;margin-right:4px;"></span>Visited</span>
+      </div>
+    </div>
+    <canvas id="graphCanvas" style="width:100%; display:block;"></canvas>
+  </div>
+
+  <!-- Side Panel -->
+  <div style="display:flex; flex-direction:column; gap:14px;">
+
+    <!-- Status -->
+    <div class="card" style="border-color:rgba(0,229,255,0.2);">
+      <div style="font-size:10px; letter-spacing:2px; color:var(--muted); margin-bottom:8px;">STATUS</div>
+      <div id="status-text" style="font-size:11px; color:var(--yellow); line-height:1.7; min-height:56px;">Ready...</div>
+    </div>
+
+    <!-- Path tracker -->
+    <div class="card">
+      <div style="font-size:10px; letter-spacing:2px; color:var(--cyan); margin-bottom:10px;">
+        {% if show_depth %}CURRENT PATH{% else %}FRONTIER{% endif %}
+      </div>
+      <div id="frontier-container" style="display:flex; flex-wrap:wrap; gap:5px; min-height:32px;">
+        <span style="color:var(--muted); font-size:12px;">—</span>
+      </div>
+    </div>
+
+    <!-- Visited -->
+    <div class="card">
+      <div style="font-size:10px; letter-spacing:2px; color:var(--green); margin-bottom:10px;">VISITED ORDER</div>
+      <div id="visited-order" style="display:flex; flex-wrap:wrap; gap:5px; min-height:30px;">
+        <span style="color:var(--muted); font-size:12px;">—</span>
+      </div>
+    </div>
+
+    {% if show_heuristic %}
+    <!-- Heuristic values -->
+    <div class="card">
+      <div style="font-size:10px; letter-spacing:2px; color:var(--orange); margin-bottom:10px;">HEURISTIC h(n)</div>
+      <div id="heuristic-table"></div>
+    </div>
+    {% endif %}
+
+    <!-- Progress -->
+    <div class="card" style="text-align:center;">
+      <div style="font-size:10px; letter-spacing:2px; color:var(--muted); margin-bottom:6px;">PROGRESS</div>
+      <span style="font-family:var(--font-head); font-size:26px; color:var(--cyan);" id="step-num">0</span>
+      <span style="color:var(--muted);"> / </span>
+      <span style="font-family:var(--font-head); font-size:14px; color:var(--muted);" id="total-steps">0</span>
+    </div>
+
+  </div>
+</div>
+
+<!-- Controls -->
+<div class="fade-up-4" style="display:flex; gap:10px; justify-content:center; align-items:center; flex-wrap:wrap;">
+  <button onclick="prevStep()" class="btn-ghost" style="padding:10px 20px;">⏮ PREV</button>
+  <button onclick="togglePlay()" id="play-btn" class="btn-primary" style="padding:12px 36px; font-size:15px; letter-spacing:3px;">▶ PLAY</button>
+  <button onclick="nextStep()" class="btn-ghost" style="padding:10px 20px;">NEXT ⏭</button>
+  <button onclick="resetViz()" class="btn-ghost" style="padding:10px 20px;">↺ RESET</button>
+  <div style="display:flex; align-items:center; gap:10px; margin-left:10px;">
+    <span style="font-size:10px; color:var(--muted); letter-spacing:2px;">SPEED</span>
+    <input type="range" id="speed-slider" min="200" max="1500" value="800"
+      style="width:100px; accent-color:var(--cyan);">
+  </div>
+</div>
+
+<script>
+const steps     = {{ steps|safe }};
+const edgeList  = {{ edges|safe }};
+const nodeCount = {{ node_count }};
+const startNode = {{ start_node }};
+const goalNode  = {{ goal_node }};
+const heuristic = {{ heuristic|safe }};
+const showDepth = {% if show_depth %}true{% else %}false{% endif %};
+
+let current = 0, playing = false, timer = null, visitedOrder = [];
+
+const canvas = document.getElementById('graphCanvas');
+const ctx    = canvas.getContext('2d');
+
+function resizeCanvas() {
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width  = rect.width;
+  canvas.height = Math.max(360, Math.min(rect.width * 0.6, 460));
+  drawGraph(steps[current]);
+}
+
+function getNodePositions() {
+  const cx=canvas.width/2, cy=canvas.height/2;
+  const r=Math.min(cx,cy)*0.72;
+  return Array.from({length:nodeCount},(_,i)=>{
+    const angle=(2*Math.PI*i/nodeCount)-Math.PI/2;
+    return {x:cx+r*Math.cos(angle), y:cy+r*Math.sin(angle)};
+  });
+}
+
+function drawGraph(step) {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const pos   = getNodePositions();
+  const nodeR = Math.max(22,Math.min(28,canvas.width/(nodeCount*2.8)));
+
+  // Edges
+  edgeList.forEach(edge => {
+    const a=edge[0], b=edge[1], w=edge[2]||null;
+    const isExpl = step.exploring_edge &&
+      ((step.exploring_edge[0]===a&&step.exploring_edge[1]===b)||
+       (step.exploring_edge[0]===b&&step.exploring_edge[1]===a));
+    const isPath = step.path && step.path.includes(a) && step.path.includes(b);
+
+    ctx.beginPath();
+    ctx.moveTo(pos[a].x,pos[a].y);
+    ctx.lineTo(pos[b].x,pos[b].y);
+    ctx.setLineDash([]);
+    if (isExpl)       { ctx.strokeStyle='#FF8C42'; ctx.lineWidth=3; }
+    else if (isPath)  { ctx.strokeStyle='rgba(0,229,255,0.5)'; ctx.lineWidth=2.5; }
+    else              { ctx.strokeStyle='#1A3A5C'; ctx.lineWidth=1.5; ctx.setLineDash([5,4]); }
+    ctx.stroke(); ctx.setLineDash([]);
+
+    // Weight label if weighted
+    if (w !== null) {
+      const mx=(pos[a].x+pos[b].x)/2, my=(pos[a].y+pos[b].y)/2;
+      ctx.fillStyle='#0a1628';
+      ctx.beginPath(); ctx.arc(mx,my,10,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle=isExpl?'#FF8C42':'#3a6080';
+      ctx.font='bold 10px "JetBrains Mono",monospace';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(w,mx,my);
+    }
+  });
+
+  // Nodes
+  for (let i=0; i<nodeCount; i++) {
+    const {x,y}=pos[i];
+    const isVisited = step.visited&&step.visited.includes(i);
+    const isCurrent = step.current===i;
+    const isExpl    = step.exploring_edge&&step.exploring_edge.includes(i);
+    const isGoal    = i===goalNode;
+    const isStart   = i===startNode;
+    const isPath    = step.path&&step.path.includes(i);
+    const isGoalFound = step.goal_found && isGoal;
+
+    // Glow
+    if (isCurrent||isExpl||isGoalFound) {
+      ctx.beginPath(); ctx.arc(x,y,nodeR+12,0,Math.PI*2);
+      const grd=ctx.createRadialGradient(x,y,nodeR,x,y,nodeR+15);
+      grd.addColorStop(0, isGoalFound?'rgba(0,255,100,0.5)':isCurrent?'rgba(0,229,255,0.4)':'rgba(255,140,66,0.3)');
+      grd.addColorStop(1,'transparent');
+      ctx.fillStyle=grd; ctx.fill();
+    }
+
+    ctx.beginPath(); ctx.arc(x,y,nodeR,0,Math.PI*2);
+    let fill='#0d1f38', stroke='#1a3a5c', sw=1.5;
+    if (isGoalFound)     { fill='#004d20'; stroke='#00ff64'; sw=3; }
+    else if (isGoal)     { fill='#4d0010'; stroke='#ff4444'; sw=2.5; }
+    else if (isCurrent)  { fill='#003d55'; stroke='#00E5FF'; sw=3; }
+    else if (isPath)     { fill='#002d45'; stroke='#00c8ff'; sw=2; }
+    else if (isExpl)     { fill='#4a2a0a'; stroke='#FF8C42'; sw=2; }
+    else if (isVisited)  { fill='#003d28'; stroke='#00D4A0'; sw=2; }
+    if (isStart)         { stroke='#FFD166'; sw=Math.max(sw,2.5); }
+
+    ctx.fillStyle=fill; ctx.fill();
+    ctx.strokeStyle=stroke; ctx.lineWidth=sw; ctx.stroke();
+
+    ctx.fillStyle=isGoalFound?'#00ff64':isGoal?'#ff4444':isCurrent?'#00E5FF':isVisited?'#00D4A0':'#8BAABF';
+    ctx.font=`bold ${Math.round(nodeR*0.65)}px "JetBrains Mono",monospace`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(i,x,y);
+
+    // Heuristic label below node
+    if (heuristic[i] !== undefined) {
+      ctx.fillStyle='#3a6080';
+      ctx.font=`${Math.round(nodeR*0.45)}px "JetBrains Mono",monospace`;
+      ctx.fillText(`h=${heuristic[i]}`,x,y+nodeR+13);
+    }
+
+    // Markers
+    if (isStart) {
+      ctx.fillStyle='#FFD166'; ctx.font=`${Math.round(nodeR*0.45)}px sans-serif`;
+      ctx.fillText('★',x,y-nodeR-9);
+    }
+    if (isGoal) {
+      ctx.fillStyle='#ff4444'; ctx.font=`${Math.round(nodeR*0.45)}px sans-serif`;
+      ctx.fillText('🎯',x,y-nodeR-9);
+    }
+  }
+}
+
+function updatePanel(step) {
+  // Status
+  const el=document.getElementById('status-text');
+  el.textContent=step.status||'';
+  el.style.color=step.goal_found?'#00ff64':step.exploring_edge?'#FF8C42':step.done?'#ff4444':'#FFD166';
+
+  // Frontier or Path
+  const fc=document.getElementById('frontier-container');
+  const items = showDepth ? (step.path||[]) : (step.frontier||[]);
+  if (!items||items.length===0) {
+    fc.innerHTML='<span style="color:var(--muted);font-size:12px;">Empty</span>';
+  } else {
+    fc.innerHTML=items.map((n,idx)=>{
+      const isFirst = idx===0;
+      const val = Array.isArray(n) ? n[1] : n;
+      return `<div style="background:${isFirst?'rgba(0,229,255,0.15)':'#0d1f38'};
+        border:1px solid ${isFirst?'#00E5FF':'#1a3a5c'};
+        border-radius:6px;padding:4px 10px;
+        font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:bold;
+        color:${isFirst?'#00E5FF':'#8baabf'};">${val}</div>`;
+    }).join(showDepth?'<span style="color:#1a3a5c;line-height:30px;">→</span>':'');
+  }
+
+  // Visited order
+  if (step.current!==null&&step.current!==undefined&&step.status&&(step.status.includes('Visit')||step.status.includes('Dequeue')||step.status.includes('Pick'))) {
+    if (!visitedOrder.includes(step.current)) visitedOrder.push(step.current);
+  }
+  const vo=document.getElementById('visited-order');
+  vo.innerHTML=visitedOrder.length===0
+    ?'<span style="color:var(--muted);font-size:12px;">—</span>'
+    :visitedOrder.map((n,i)=>`
+      <div style="display:flex;align-items:center;gap:4px;">
+        <div style="background:#003d28;border:1px solid #00D4A0;border-radius:6px;padding:4px 10px;
+          font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:bold;color:#00D4A0;">${n}</div>
+        ${i<visitedOrder.length-1?'<span style="color:#1a3a5c;">→</span>':''}
+      </div>`).join('');
+
+  // Heuristic table
+  const ht=document.getElementById('heuristic-table');
+  if (ht&&Object.keys(heuristic).length>0) {
+    ht.innerHTML=Object.entries(heuristic).map(([n,h])=>{
+      const isCur=step.current===parseInt(n);
+      return `<div style="display:flex;justify-content:space-between;padding:4px 8px;margin-bottom:3px;
+        border-radius:5px;background:${isCur?'#003d55':'#0d1f38'};
+        border:1px solid ${isCur?'#00E5FF':'#1a3a5c'};">
+        <span style="font-size:11px;color:#8baabf;">Node ${n}${parseInt(n)===goalNode?' 🎯':''}</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:bold;
+          color:${isCur?'#00E5FF':'#FF8C42'};">${h}</span>
+      </div>`;
+    }).join('');
+  }
+
+  document.getElementById('step-num').textContent    = current;
+  document.getElementById('total-steps').textContent = steps.length-1;
+}
+
+function render(step) { drawGraph(step); updatePanel(step); }
+function getDelay() { return 1700-parseInt(document.getElementById('speed-slider').value); }
+function nextStep() { if(current<steps.length-1){current++;render(steps[current]);}else stopPlay(); }
+function prevStep() { if(current>0){current--;visitedOrder=[];render(steps[current]);} }
+function resetViz() { stopPlay();current=0;visitedOrder=[];render(steps[0]); }
+function togglePlay() { playing?stopPlay():startPlay(); }
+function startPlay() {
+  playing=true; document.getElementById('play-btn').textContent='⏸ PAUSE';
+  timer=setInterval(()=>{if(current<steps.length-1){current++;render(steps[current]);}else stopPlay();},getDelay());
+}
+function stopPlay() {
+  playing=false; document.getElementById('play-btn').textContent='▶ PLAY'; clearInterval(timer);
+}
+
+window.addEventListener('resize',resizeCanvas);
+resizeCanvas(); render(steps[0]);
+</script>
+{% endblock %}

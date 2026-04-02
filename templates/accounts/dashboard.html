@@ -72,6 +72,42 @@
     </div>
     </a>
 
+    <a href="{% url 'floyd_warshall' %}" style="text-decoration:none;">
+    <div class="card" style="border-color:rgba(0,212,160,0.3); cursor:pointer; position:relative; overflow:hidden;">
+      <div style="position:absolute; top:0; left:0; width:3px; height:100%; background:var(--green);"></div>
+      <div style="font-size:32px; margin-bottom:12px;">🔄</div>
+      <div style="font-family:var(--font-head); font-size:13px; font-weight:700; color:var(--text); letter-spacing:1px; margin-bottom:8px;">FLOYD-WARSHALL</div>
+      <div class="tag tag-green">LIVE</div>
+    </div>
+    </a>
+
+    <a href="{% url 'best_first' %}" style="text-decoration:none;">
+    <div class="card" style="border-color:rgba(255,140,66,0.3); cursor:pointer; position:relative; overflow:hidden;">
+      <div style="position:absolute; top:0; left:0; width:3px; height:100%; background:var(--orange);"></div>
+      <div style="font-size:32px; margin-bottom:12px;">⭐</div>
+      <div style="font-family:var(--font-head); font-size:13px; font-weight:700; color:var(--text); letter-spacing:1px; margin-bottom:8px;">BEST FIRST</div>
+      <div class="tag" style="background:rgba(255,140,66,0.12);color:var(--orange);border:1px solid rgba(255,140,66,0.3);">LIVE</div>
+    </div>
+    </a>
+
+    <a href="{% url 'ucs' %}" style="text-decoration:none;">
+      <div class="card" style="border-color:rgba(255,209,102,0.3); cursor:pointer; position:relative; overflow:hidden;">
+        <div style="position:absolute; top:0; left:0; width:3px; height:100%; background:var(--yellow);"></div>
+        <div style="font-size:32px; margin-bottom:12px;">💰</div>
+        <div style="font-family:var(--font-head); font-size:13px; font-weight:700; color:var(--text); letter-spacing:1px; margin-bottom:8px;">UCS</div>
+        <div class="tag" style="background:rgba(255,209,102,0.12);color:var(--yellow);border:1px solid rgba(255,209,102,0.3);">LIVE</div>
+      </div>
+    </a>
+
+    <a href="{% url 'dls' %}" style="text-decoration:none;">
+      <div class="card" style="border-color:rgba(0,180,216,0.3); cursor:pointer; position:relative; overflow:hidden;">
+        <div style="position:absolute; top:0; left:0; width:3px; height:100%; background:var(--cyan2);"></div>
+        <div style="font-size:32px; margin-bottom:12px;">📏</div>
+        <div style="font-family:var(--font-head); font-size:13px; font-weight:700; color:var(--text); letter-spacing:1px; margin-bottom:8px;">DLS</div>
+        <div class="tag tag-cyan">LIVE</div>
+      </div>
+    </a>
+
     {% for name, emoji in algorithms %}
     <div class="card" style="opacity:0.55; cursor:not-allowed; position:relative; overflow:hidden;">
       <div style="position:absolute; top:0; left:0; width:3px; height:100%; background:var(--border);"></div>

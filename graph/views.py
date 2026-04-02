@@ -506,3 +506,441 @@ def bellman_ford_view(request):
         'edges_str':  edges_str,
         'algo_desc':  'Relaxes ALL edges N-1 times. Works with negative weights. Detects negative cycles.',
     })
+    
+# ─── Floyd-Warshall Algorithm ──────────────────────────────────
+
+def floyd_warshall_steps(node_count, edges):
+    INF = float('inf')
+
+    # Initialize distance matrix
+    dist = [[INF]*node_count for _ in range(node_count)]
+    for i in range(node_count):
+        dist[i][i] = 0
+    for a, b, w in edges:
+        dist[a][b] = min(dist[a][b], w)
+        dist[b][a] = min(dist[b][a], w)
+
+    def mat_snapshot():
+        return [[(-1 if v==INF else v) for v in row] for row in dist]
+
+    steps = []
+    steps.append({
+        'matrix': mat_snapshot(),
+        'k': -1, 'i': -1, 'j': -1,
+        'relaxed': None,
+        'current_edge': None,
+        'status': 'Initialize distance matrix. Direct edges set, diagonal=0, rest=∞',
+        'done': False
+    })
+
+    for k in range(node_count):
+        steps.append({
+            'matrix': mat_snapshot(),
+            'k': k, 'i': -1, 'j': -1,
+            'relaxed': None,
+            'current_edge': None,
+            'status': f'Using node {k} as intermediate vertex.',
+            'done': False
+        })
+        for i in range(node_count):
+            for j in range(node_count):
+                if dist[i][k] == INF or dist[k][j] == INF:
+                    continue
+                steps.append({
+                    'matrix': mat_snapshot(),
+                    'k': k, 'i': i, 'j': j,
+                    'relaxed': None,
+                    'current_edge': [i, j],
+                    'status': f'Check: dist[{i}][{j}] = {dist[i][j] if dist[i][j]!=INF else "∞"} vs dist[{i}][{k}]+dist[{k}][{j}] = {dist[i][k]}+{dist[k][j]} = {dist[i][k]+dist[k][j]}',
+                    'done': False
+                })
+                new_dist = dist[i][k] + dist[k][j]
+                if new_dist < dist[i][j]:
+                    dist[i][j] = new_dist
+                    dist[j][i] = new_dist
+                    steps.append({
+                        'matrix': mat_snapshot(),
+                        'k': k, 'i': i, 'j': j,
+                        'relaxed': [i, j],
+                        'current_edge': None,
+                        'status': f'✅ Updated dist[{i}][{j}] = {new_dist} (via node {k})',
+                        'done': False
+                    })
+
+    steps.append({
+        'matrix': mat_snapshot(),
+        'k': node_count-1, 'i': -1, 'j': -1,
+        'relaxed': None,
+        'current_edge': None,
+        'status': f'✅ Floyd-Warshall Complete! All-pairs shortest paths found.',
+        'done': True
+    })
+    return steps
+
+
+@login_required
+def floyd_warshall_view(request):
+    edges_str  = DEFAULT_WEIGHTED_EDGES
+    node_count = DEFAULT_W_NODES
+
+    if request.method == 'POST':
+        edges_str = request.POST.get('edges', DEFAULT_WEIGHTED_EDGES)
+        try: node_count = min(int(request.POST.get('nodes', DEFAULT_W_NODES)), 8)
+        except: node_count = DEFAULT_W_NODES
+
+    _, edges_list = parse_weighted_graph(edges_str, node_count)
+    steps = floyd_warshall_steps(node_count, edges_list)
+
+    return render(request, 'graph/floyd_warshall.html', {
+        'steps':      json.dumps(steps),
+        'edges':      json.dumps(edges_list),
+        'node_count': node_count,
+        'edges_str':  edges_str,
+        'algo_desc':  'Finds shortest paths between ALL pairs of nodes. Uses dynamic programming. O(V³) time complexity.',
+    })
+    
+# ─── Best First Search ─────────────────────────────────────────
+
+def best_first_steps(graph, start, goal, heuristic, node_count):
+    import heapq
+    visited = set()
+    pq = [(heuristic[start], start)]
+    parent = {start: None}
+    steps = []
+
+    steps.append({
+        'visited': [], 'current': None,
+        'exploring_edge': None, 'frontier': [start],
+        'goal_found': False,
+        'status': f'Start Best First Search from {start} → Goal: {goal}. h({start})={heuristic[start]}',
+        'done': False
+    })
+
+    while pq:
+        h, node = heapq.heappop(pq)
+        if node in visited:
+            continue
+        visited.add(node)
+
+        steps.append({
+            'visited': list(visited), 'current': node,
+            'exploring_edge': None,
+            'frontier': [n for _, n in pq],
+            'goal_found': node == goal,
+            'status': f'Pick node {node} (h={heuristic[node]}). {"🎯 GOAL FOUND!" if node==goal else "Process neighbors."}',
+            'done': node == goal
+        })
+
+        if node == goal:
+            break
+
+        for neighbor in sorted(graph.get(node, [])):
+            steps.append({
+                'visited': list(visited), 'current': node,
+                'exploring_edge': [node, neighbor],
+                'frontier': [n for _, n in pq],
+                'goal_found': False,
+                'status': f'Check neighbor {neighbor}. h({neighbor})={heuristic.get(neighbor, 0)}',
+                'done': False
+            })
+            if neighbor not in visited:
+                parent[neighbor] = node
+                heapq.heappush(pq, (heuristic.get(neighbor, 0), neighbor))
+                steps.append({
+                    'visited': list(visited), 'current': node,
+                    'exploring_edge': [node, neighbor],
+                    'frontier': [n for _, n in pq],
+                    'goal_found': False,
+                    'status': f'Add {neighbor} to frontier (h={heuristic.get(neighbor,0)})',
+                    'done': False
+                })
+
+    if goal not in visited:
+        steps.append({
+            'visited': list(visited), 'current': None,
+            'exploring_edge': None, 'frontier': [],
+            'goal_found': False,
+            'status': f'Goal {goal} not reachable!',
+            'done': True
+        })
+
+    return steps, parent
+
+
+# ─── UCS (Uniform Cost Search) ─────────────────────────────────
+
+def ucs_steps(graph_weighted, start, goal, node_count):
+    import heapq
+    INF = float('inf')
+    dist = {i: INF for i in range(node_count)}
+    dist[start] = 0
+    pq = [(0, start)]
+    visited = set()
+    parent = {start: None}
+    steps = []
+
+    steps.append({
+        'visited': [], 'current': None,
+        'exploring_edge': None,
+        'frontier': [(0, start)],
+        'goal_found': False,
+        'dist': {k: (v if v != INF else -1) for k, v in dist.items()},
+        'status': f'Start UCS from {start} → Goal: {goal}. Cost[{start}]=0',
+        'done': False
+    })
+
+    while pq:
+        cost, node = heapq.heappop(pq)
+        if node in visited:
+            continue
+        visited.add(node)
+
+        steps.append({
+            'visited': list(visited), 'current': node,
+            'exploring_edge': None,
+            'frontier': list(pq),
+            'goal_found': node == goal,
+            'dist': {k: (v if v != INF else -1) for k, v in dist.items()},
+            'status': f'Dequeue node {node} (cost={cost}). {"🎯 GOAL FOUND!" if node==goal else "Process neighbors."}',
+            'done': node == goal
+        })
+
+        if node == goal:
+            break
+
+        for neighbor, weight in sorted(graph_weighted.get(node, [])):
+            if neighbor in visited:
+                continue
+            new_cost = cost + weight
+            steps.append({
+                'visited': list(visited), 'current': node,
+                'exploring_edge': [node, neighbor],
+                'frontier': list(pq),
+                'goal_found': False,
+                'dist': {k: (v if v != INF else -1) for k, v in dist.items()},
+                'status': f'Check {node}→{neighbor} (w={weight}). Total cost={new_cost} vs {dist[neighbor] if dist[neighbor]!=INF else "∞"}',
+                'done': False
+            })
+            if new_cost < dist[neighbor]:
+                dist[neighbor] = new_cost
+                parent[neighbor] = node
+                heapq.heappush(pq, (new_cost, neighbor))
+                steps.append({
+                    'visited': list(visited), 'current': node,
+                    'exploring_edge': [node, neighbor],
+                    'frontier': list(pq),
+                    'goal_found': False,
+                    'dist': {k: (v if v != INF else -1) for k, v in dist.items()},
+                    'status': f'✅ Updated cost[{neighbor}]={new_cost}. Added to frontier.',
+                    'done': False
+                })
+
+    if goal not in visited:
+        steps.append({
+            'visited': list(visited), 'current': None,
+            'exploring_edge': None, 'frontier': [],
+            'goal_found': False,
+            'dist': {k: (v if v != INF else -1) for k, v in dist.items()},
+            'status': f'Goal {goal} not reachable!',
+            'done': True
+        })
+
+    return steps
+
+
+# ─── DLS (Depth Limited Search) ────────────────────────────────
+
+def dls_steps(graph, start, goal, limit, node_count):
+    steps = []
+    found = [False]
+    path = []
+
+    steps.append({
+        'visited': [], 'current': None, 'path': [],
+        'exploring_edge': None, 'depth': 0, 'limit': limit,
+        'goal_found': False,
+        'status': f'Start DLS from {start} → Goal: {goal}. Depth limit: {limit}',
+        'done': False
+    })
+
+    def dls_recursive(node, depth, visited_set, current_path):
+        if found[0]:
+            return
+        visited_set.add(node)
+        current_path.append(node)
+
+        steps.append({
+            'visited': list(visited_set), 'current': node,
+            'path': list(current_path),
+            'exploring_edge': None, 'depth': depth, 'limit': limit,
+            'goal_found': node == goal,
+            'status': f'Visit node {node} at depth {depth}/{limit}. {"🎯 GOAL FOUND!" if node==goal else ""}',
+            'done': node == goal
+        })
+
+        if node == goal:
+            found[0] = True
+            return
+
+        if depth >= limit:
+            steps.append({
+                'visited': list(visited_set), 'current': node,
+                'path': list(current_path),
+                'exploring_edge': None, 'depth': depth, 'limit': limit,
+                'goal_found': False,
+                'status': f'⛔ Depth limit {limit} reached at node {node}. Backtrack.',
+                'done': False
+            })
+            current_path.pop()
+            return
+
+        for neighbor in sorted(graph.get(node, [])):
+            if neighbor not in visited_set and not found[0]:
+                steps.append({
+                    'visited': list(visited_set), 'current': node,
+                    'path': list(current_path),
+                    'exploring_edge': [node, neighbor],
+                    'depth': depth, 'limit': limit,
+                    'goal_found': False,
+                    'status': f'Explore edge {node}→{neighbor} (depth {depth+1}/{limit})',
+                    'done': False
+                })
+                dls_recursive(neighbor, depth + 1, visited_set, current_path)
+
+        if not found[0]:
+            current_path.pop()
+            steps.append({
+                'visited': list(visited_set), 'current': node,
+                'path': list(current_path),
+                'exploring_edge': None, 'depth': depth, 'limit': limit,
+                'goal_found': False,
+                'status': f'Backtrack from node {node}.',
+                'done': False
+            })
+
+    dls_recursive(start, 0, set(), [])
+
+    if not found[0]:
+        steps.append({
+            'visited': [], 'current': None, 'path': [],
+            'exploring_edge': None, 'depth': 0, 'limit': limit,
+            'goal_found': False,
+            'status': f'Goal {goal} not found within depth limit {limit}!',
+            'done': True
+        })
+
+    return steps
+
+
+# ─── Default heuristic helper ───────────────────────────────────
+def default_heuristic(node_count, goal):
+    # Simple heuristic: distance from goal (decreasing)
+    return {i: abs(goal - i) for i in range(node_count)}
+
+
+# ─── Views ─────────────────────────────────────────────────────
+
+DEFAULT_GOAL = 5
+
+@login_required
+def best_first_view(request):
+    edges_str  = DEFAULT_EDGES
+    node_count = DEFAULT_NODES
+    start_node = DEFAULT_START
+    goal_node  = DEFAULT_GOAL
+
+    if request.method == 'POST':
+        edges_str = request.POST.get('edges', DEFAULT_EDGES)
+        try: node_count = min(int(request.POST.get('nodes', DEFAULT_NODES)), 12)
+        except: node_count = DEFAULT_NODES
+        try: start_node = int(request.POST.get('start', DEFAULT_START))
+        except: start_node = DEFAULT_START
+        try: goal_node = int(request.POST.get('goal', DEFAULT_GOAL))
+        except: goal_node = DEFAULT_GOAL
+        start_node = max(0, min(start_node, node_count-1))
+        goal_node  = max(0, min(goal_node,  node_count-1))
+
+    graph, edges = parse_graph(edges_str, node_count)
+    heuristic = default_heuristic(node_count, goal_node)
+    steps, _ = best_first_steps(graph, start_node, goal_node, heuristic, node_count)
+
+    return render(request, 'graph/search_viz.html', {
+        'steps': json.dumps(steps), 'edges': json.dumps(edges),
+        'node_count': node_count, 'start_node': start_node,
+        'goal_node': goal_node, 'edges_str': edges_str,
+        'heuristic': json.dumps(heuristic),
+        'algo_name': 'BEST FIRST SEARCH', 'algo_emoji': '⭐',
+        'algo_desc': 'Greedy search using heuristic h(n). Always picks the node closest to goal. Does NOT guarantee shortest path.',
+        'show_heuristic': True, 'show_cost': False, 'show_depth': False,
+        'has_goal': True,
+    })
+
+
+@login_required
+def ucs_view(request):
+    edges_str  = DEFAULT_WEIGHTED_EDGES
+    node_count = DEFAULT_W_NODES
+    start_node = DEFAULT_START
+    goal_node  = DEFAULT_GOAL - 1
+
+    if request.method == 'POST':
+        edges_str = request.POST.get('edges', DEFAULT_WEIGHTED_EDGES)
+        try: node_count = min(int(request.POST.get('nodes', DEFAULT_W_NODES)), 12)
+        except: node_count = DEFAULT_W_NODES
+        try: start_node = int(request.POST.get('start', DEFAULT_START))
+        except: start_node = DEFAULT_START
+        try: goal_node = int(request.POST.get('goal', DEFAULT_GOAL-1))
+        except: goal_node = DEFAULT_GOAL-1
+        start_node = max(0, min(start_node, node_count-1))
+        goal_node  = max(0, min(goal_node,  node_count-1))
+
+    graph_w, edges = parse_weighted_graph(edges_str, node_count)
+    steps = ucs_steps(graph_w, start_node, goal_node, node_count)
+
+    return render(request, 'graph/search_viz.html', {
+        'steps': json.dumps(steps), 'edges': json.dumps(edges),
+        'node_count': node_count, 'start_node': start_node,
+        'goal_node': goal_node, 'edges_str': edges_str,
+        'heuristic': json.dumps({}),
+        'algo_name': 'UNIFORM COST SEARCH', 'algo_emoji': '💰',
+        'algo_desc': 'Expands lowest cumulative cost node first. Guarantees shortest path. Like Dijkstra but stops at goal.',
+        'show_heuristic': False, 'show_cost': True, 'show_depth': False,
+        'has_goal': True,
+    })
+
+
+@login_required
+def dls_view(request):
+    edges_str  = DEFAULT_EDGES
+    node_count = DEFAULT_NODES
+    start_node = DEFAULT_START
+    goal_node  = DEFAULT_GOAL
+    depth_limit = 3
+
+    if request.method == 'POST':
+        edges_str = request.POST.get('edges', DEFAULT_EDGES)
+        try: node_count = min(int(request.POST.get('nodes', DEFAULT_NODES)), 12)
+        except: node_count = DEFAULT_NODES
+        try: start_node = int(request.POST.get('start', DEFAULT_START))
+        except: start_node = DEFAULT_START
+        try: goal_node = int(request.POST.get('goal', DEFAULT_GOAL))
+        except: goal_node = DEFAULT_GOAL
+        try: depth_limit = min(int(request.POST.get('limit', 3)), 10)
+        except: depth_limit = 3
+        start_node = max(0, min(start_node, node_count-1))
+        goal_node  = max(0, min(goal_node,  node_count-1))
+
+    graph, edges = parse_graph(edges_str, node_count)
+    steps = dls_steps(graph, start_node, goal_node, depth_limit, node_count)
+
+    return render(request, 'graph/search_viz.html', {
+        'steps': json.dumps(steps), 'edges': json.dumps(edges),
+        'node_count': node_count, 'start_node': start_node,
+        'goal_node': goal_node, 'edges_str': edges_str,
+        'heuristic': json.dumps({}),
+        'algo_name': 'DEPTH LIMITED SEARCH', 'algo_emoji': '📏',
+        'algo_desc': 'DFS with a maximum depth limit. Avoids infinite loops. Incomplete if goal is beyond the limit.',
+        'show_heuristic': False, 'show_cost': False, 'show_depth': True,
+        'depth_limit': depth_limit,
+        'has_goal': True,
+    })
