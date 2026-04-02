@@ -108,6 +108,15 @@
       </div>
     </a>
 
+    <a href="{% url 'astar' %}" style="text-decoration:none;">
+      <div class="card" style="border-color:rgba(0,255,100,0.3); cursor:pointer; position:relative; overflow:hidden;">
+        <div style="position:absolute; top:0; left:0; width:3px; height:100%; background:#00ff64;"></div>
+        <div style="font-size:32px; margin-bottom:12px;">🎯</div>
+        <div style="font-family:var(--font-head); font-size:13px; font-weight:700; color:var(--text); letter-spacing:1px; margin-bottom:8px;">A* SEARCH</div>
+        <div class="tag" style="background:rgba(0,255,100,0.12);color:#00ff64;border:1px solid rgba(0,255,100,0.3);">LIVE</div>
+      </div>
+    </a>
+
     {% for name, emoji in algorithms %}
     <div class="card" style="opacity:0.55; cursor:not-allowed; position:relative; overflow:hidden;">
       <div style="position:absolute; top:0; left:0; width:3px; height:100%; background:var(--border);"></div>

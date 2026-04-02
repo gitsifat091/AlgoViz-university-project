@@ -16,4 +16,5 @@ urlpatterns = [
     path('graph/best-first/',     views.best_first_view,     name='best_first'),
     path('graph/ucs/',            views.ucs_view,            name='ucs'),
     path('graph/dls/',            views.dls_view,            name='dls'),
+    path('graph/astar/',          views.astar_view,          name='astar'),
 ]

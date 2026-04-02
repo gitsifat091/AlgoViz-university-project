@@ -47,7 +47,7 @@ def dashboard(request):
         ("Quick Sort",     "⚡", "quick_sort"),
     ]
     algorithms = [
-        ("A* Search", "🎯"),
+        
     ]
     return render(request, 'accounts/dashboard.html', {
         'sorting_algorithms': sorting_algorithms,

@@ -944,3 +944,143 @@ def dls_view(request):
         'depth_limit': depth_limit,
         'has_goal': True,
     })
+    
+# ─── A* Search Algorithm ───────────────────────────────────────
+
+def astar_steps(graph_weighted, start, goal, heuristic, node_count):
+    import heapq
+    INF = float('inf')
+    g_cost = {i: INF for i in range(node_count)}
+    g_cost[start] = 0
+    f_cost = {i: INF for i in range(node_count)}
+    f_cost[start] = heuristic.get(start, 0)
+    pq = [(f_cost[start], start)]
+    visited = set()
+    parent = {start: None}
+    steps = []
+
+    steps.append({
+        'visited': [], 'current': None,
+        'exploring_edge': None, 'relaxed_edge': None,
+        'frontier': [start],
+        'g_cost': {k: (v if v != INF else -1) for k, v in g_cost.items()},
+        'f_cost': {k: (v if v != INF else -1) for k, v in f_cost.items()},
+        'goal_found': False,
+        'status': f'Initialize A*. Start={start}, Goal={goal}. f({start})=g({start})+h({start})=0+{heuristic.get(start,0)}={f_cost[start]}',
+        'done': False
+    })
+
+    while pq:
+        f, node = heapq.heappop(pq)
+        if node in visited:
+            continue
+        visited.add(node)
+
+        steps.append({
+            'visited': list(visited), 'current': node,
+            'exploring_edge': None, 'relaxed_edge': None,
+            'frontier': [n for _, n in pq],
+            'g_cost': {k: (v if v != INF else -1) for k, v in g_cost.items()},
+            'f_cost': {k: (v if v != INF else -1) for k, v in f_cost.items()},
+            'goal_found': node == goal,
+            'status': f'Pick node {node} | f={f} | g={g_cost[node]} | h={heuristic.get(node,0)}. {"🎯 GOAL FOUND!" if node==goal else "Expand neighbors."}',
+            'done': node == goal
+        })
+
+        if node == goal:
+            break
+
+        for neighbor, weight in sorted(graph_weighted.get(node, [])):
+            if neighbor in visited:
+                continue
+
+            new_g = g_cost[node] + weight
+            new_h = heuristic.get(neighbor, 0)
+            new_f = new_g + new_h
+
+            steps.append({
+                'visited': list(visited), 'current': node,
+                'exploring_edge': [node, neighbor],
+                'relaxed_edge': None,
+                'frontier': [n for _, n in pq],
+                'g_cost': {k: (v if v != INF else -1) for k, v in g_cost.items()},
+                'f_cost': {k: (v if v != INF else -1) for k, v in f_cost.items()},
+                'goal_found': False,
+                'status': f'Check {node}→{neighbor} | g={new_g} | h={new_h} | f={new_f} vs current f={f_cost[neighbor] if f_cost[neighbor]!=INF else "∞"}',
+                'done': False
+            })
+
+            if new_g < g_cost[neighbor]:
+                g_cost[neighbor] = new_g
+                f_cost[neighbor] = new_f
+                parent[neighbor] = node
+                heapq.heappush(pq, (new_f, neighbor))
+
+                steps.append({
+                    'visited': list(visited), 'current': node,
+                    'exploring_edge': None,
+                    'relaxed_edge': [node, neighbor],
+                    'frontier': [n for _, n in pq],
+                    'g_cost': {k: (v if v != INF else -1) for k, v in g_cost.items()},
+                    'f_cost': {k: (v if v != INF else -1) for k, v in f_cost.items()},
+                    'goal_found': False,
+                    'status': f'✅ Updated {neighbor} | g={new_g} | h={new_h} | f={new_f}',
+                    'done': False
+                })
+
+    # Reconstruct path
+    path = []
+    node = goal
+    while node is not None:
+        path.append(node)
+        node = parent.get(node)
+    path.reverse()
+
+    if goal not in visited:
+        path = []
+        steps.append({
+            'visited': list(visited), 'current': None,
+            'exploring_edge': None, 'relaxed_edge': None,
+            'frontier': [], 'goal_found': False,
+            'g_cost': {k: (v if v != INF else -1) for k, v in g_cost.items()},
+            'f_cost': {k: (v if v != INF else -1) for k, v in f_cost.items()},
+            'status': f'Goal {goal} not reachable!',
+            'done': True
+        })
+
+    return steps, path, g_cost
+
+
+@login_required
+def astar_view(request):
+    edges_str  = DEFAULT_WEIGHTED_EDGES
+    node_count = DEFAULT_W_NODES
+    start_node = DEFAULT_START
+    goal_node  = DEFAULT_W_NODES - 1
+
+    if request.method == 'POST':
+        edges_str = request.POST.get('edges', DEFAULT_WEIGHTED_EDGES)
+        try: node_count = min(int(request.POST.get('nodes', DEFAULT_W_NODES)), 12)
+        except: node_count = DEFAULT_W_NODES
+        try: start_node = int(request.POST.get('start', DEFAULT_START))
+        except: start_node = DEFAULT_START
+        try: goal_node = int(request.POST.get('goal', DEFAULT_W_NODES-1))
+        except: goal_node = DEFAULT_W_NODES - 1
+        start_node = max(0, min(start_node, node_count-1))
+        goal_node  = max(0, min(goal_node,  node_count-1))
+
+    graph_w, edges = parse_weighted_graph(edges_str, node_count)
+    heuristic = default_heuristic(node_count, goal_node)
+    steps, path, g_cost = astar_steps(graph_w, start_node, goal_node, heuristic, node_count)
+
+    return render(request, 'graph/astar.html', {
+        'steps':      json.dumps(steps),
+        'edges':      json.dumps(edges),
+        'node_count': node_count,
+        'start_node': start_node,
+        'goal_node':  goal_node,
+        'edges_str':  edges_str,
+        'heuristic':  json.dumps(heuristic),
+        'final_path': json.dumps(path),
+        'algo_desc':  'f(n) = g(n) + h(n). g=cost so far, h=heuristic estimate. Optimal & complete when h is admissible.',
+    })
