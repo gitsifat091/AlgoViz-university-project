@@ -44,6 +44,68 @@
       z-index: 0;
     }
 
+    /* Light Mode */
+    body.light {
+      --bg:       #f0f4f8;
+      --bg2:      #e2e8f0;
+      --card:     #ffffff;
+      --border:   #cbd5e1;
+      --cyan:     #0077aa;
+      --cyan2:    #005f88;
+      --green:    #007a5e;
+      --orange:   #c05a00;
+      --yellow:   #8a6800;
+      --text:     #0f172a;
+      --muted:    #64748b;
+      color-scheme: light;
+    }
+    body.light .card {
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.06);
+      border-color: #e2e8f0;
+    }
+    body.light .card:hover {
+      box-shadow: 0 8px 24px rgba(0, 119, 170, 0.15), 0 2px 8px rgba(0, 0, 0, 0.08);
+      border-color: var(--cyan);
+    }
+
+    body.light::before {
+      background-image:
+        linear-gradient(rgba(0,119,170,0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,119,170,0.06) 1px, transparent 1px);
+    }
+    body.light::after {
+      background: radial-gradient(circle, rgba(0,119,170,0.06) 0%, transparent 70%);
+    }
+    body.light nav {
+      background: rgba(240,244,248,0.92);
+      border-bottom: 1px solid #cbd5e1;
+    }
+    body.light input[type=text],
+    body.light input[type=password],
+    body.light input[type=number] {
+      background: #f8fafc;
+      color: #0f172a;
+      border-color: #cbd5e1;
+    }
+
+    /* Toggle button */
+    .theme-toggle {
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 6px 14px;
+      cursor: pointer;
+      font-family: var(--font-body);
+      font-size: 12px;
+      color: var(--muted);
+      display: flex; align-items: center; gap: 6px;
+      transition: all 0.2s;
+    }
+    .theme-toggle:hover {
+      border-color: var(--cyan);
+      color: var(--cyan);
+    }
+
     /* Glowing orb top-right */
     body::after {
       content: '';
@@ -215,8 +277,31 @@
     .fade-up-4 { animation: fadeUp 0.5s 0.3s ease both; }
   </style>
 </head>
+<script>
+  // Load saved theme
+  const saved = localStorage.getItem('theme') || 'dark';
+  if (saved === 'light') {
+    document.body.classList.add('light');
+    document.getElementById('theme-btn').textContent = '☀️ Light';
+  }
+
+  function toggleTheme() {
+    const isLight = document.body.classList.toggle('light');
+    const btn = document.getElementById('theme-btn');
+    if (isLight) {
+      btn.textContent = '☀️ Light';
+      localStorage.setItem('theme', 'light');
+    } else {
+      btn.textContent = '🌙 Dark';
+      localStorage.setItem('theme', 'dark');
+    }
+  }
+</script>
 <body>
   <nav>
+    <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn">
+      🌙 Dark
+    </button> 
     <a href="{% url 'dashboard' %}" class="nav-logo">ALGO<span>VIZ</span></a>
     <div class="nav-right">
       {% if user.is_authenticated %}
