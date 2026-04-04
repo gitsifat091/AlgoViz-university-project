@@ -1,0 +1,1 @@
+web: gunicorn algoviz.wsgi --log-file -
