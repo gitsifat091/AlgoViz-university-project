@@ -44,7 +44,6 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -125,31 +124,3 @@ LOGIN_REDIRECT_URL = '/dashboard/'
 LOGOUT_REDIRECT_URL = '/login/'
 LOGIN_URL = '/login/'
 
-
-import os
-import dj_database_url
-# try:
-#     import dj_database_url
-#     DATABASE_URL = os.environ.get('DATABASE_URL')
-#     if DATABASE_URL:
-#         DATABASES['default'] = dj_database_url.parse(DATABASE_URL)
-# except ImportError:
-#     pass
-
-# Static files
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-
-# Whitenoise middleware — MIDDLEWARE list এ এই line যোগ করো
-# 'django.middleware.security.SecurityMiddleware' এর ঠিক নিচে:
-# 'whitenoise.middleware.WhiteNoiseMiddleware',
-
-# Production settings
-SECRET_KEY = os.environ.get('SECRET_KEY', SECRET_KEY)
-DEBUG = os.environ.get('DEBUG', 'False') == 'True'
-ALLOWED_HOSTS = ['*']
-
-# Database
-DATABASE_URL = os.environ.get('DATABASE_URL')
-if DATABASE_URL:
-    DATABASES['default'] = dj_database_url.parse(DATABASE_URL)

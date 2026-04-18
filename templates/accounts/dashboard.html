@@ -31,6 +31,52 @@
   </div>
 </div>
 
+
+<!-- Tree Traversal -->
+<div class="fade-up-2" style="margin-bottom:48px;">
+  <div class="section-title">🌳 Tree Traversal</div>
+  <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px,1fr)); gap:16px;">
+
+    <a href="{% url 'tree_traversal' %}?t=inorder" style="text-decoration:none;">
+      <div class="card" style="border-color:rgba(0,212,160,0.3); cursor:pointer; position:relative; overflow:hidden;">
+        <div style="position:absolute;top:0;left:0;width:3px;height:100%;background:var(--green);"></div>
+        <div style="font-size:32px;margin-bottom:12px;">🌳</div>
+        <div style="font-family:var(--font-head);font-size:13px;font-weight:700;color:var(--text);letter-spacing:1px;margin-bottom:8px;">INORDER</div>
+        <div class="tag tag-green">LIVE</div>
+      </div>
+    </a>
+
+    <a href="{% url 'tree_traversal' %}?t=preorder" style="text-decoration:none;">
+      <div class="card" style="border-color:rgba(0,200,255,0.3); cursor:pointer; position:relative; overflow:hidden;">
+        <div style="position:absolute;top:0;left:0;width:3px;height:100%;background:var(--cyan);"></div>
+        <div style="font-size:32px;margin-bottom:12px;">🔵</div>
+        <div style="font-family:var(--font-head);font-size:13px;font-weight:700;color:var(--text);letter-spacing:1px;margin-bottom:8px;">PREORDER</div>
+        <div class="tag tag-cyan">LIVE</div>
+      </div>
+    </a>
+
+    <a href="{% url 'tree_traversal' %}?t=postorder" style="text-decoration:none;">
+      <div class="card" style="border-color:rgba(255,140,66,0.3); cursor:pointer; position:relative; overflow:hidden;">
+        <div style="position:absolute;top:0;left:0;width:3px;height:100%;background:var(--orange);"></div>
+        <div style="font-size:32px;margin-bottom:12px;">🟠</div>
+        <div style="font-family:var(--font-head);font-size:13px;font-weight:700;color:var(--text);letter-spacing:1px;margin-bottom:8px;">POSTORDER</div>
+        <div class="tag" style="background:rgba(255,140,66,0.12);color:var(--orange);border:1px solid rgba(255,140,66,0.3);">LIVE</div>
+      </div>
+    </a>
+
+    <a href="{% url 'tree_traversal' %}?t=levelorder" style="text-decoration:none;">
+      <div class="card" style="border-color:rgba(168,85,247,0.3); cursor:pointer; position:relative; overflow:hidden;">
+        <div style="position:absolute;top:0;left:0;width:3px;height:100%;background:#a855f7;"></div>
+        <div style="font-size:32px;margin-bottom:12px;">🟣</div>
+        <div style="font-family:var(--font-head);font-size:13px;font-weight:700;color:var(--text);letter-spacing:1px;margin-bottom:8px;">LEVEL ORDER</div>
+        <div class="tag" style="background:rgba(168,85,247,0.12);color:#a855f7;border:1px solid rgba(168,85,247,0.3);">LIVE</div>
+      </div>
+    </a>
+
+  </div>
+</div>
+
+
 <!-- Graph Section -->
 <div class="fade-up-3">
   <div class="section-title">🔍 Graph & Pathfinding Algorithms</div>

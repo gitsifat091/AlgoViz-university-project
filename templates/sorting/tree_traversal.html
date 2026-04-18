@@ -1,0 +1,258 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="fade-up" style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:28px; flex-wrap:wrap; gap:16px;">
+  <div>
+    <div class="tag tag-cyan" style="margin-bottom:12px;">TREE TRAVERSAL</div>
+    <h1 style="font-family:var(--font-head); font-size:26px; font-weight:900; letter-spacing:2px;">
+      🌳 <span style="color:#{{ algo_color }};" class="glow">{{ algo_name }}</span>
+      <span style="color:var(--muted); font-size:14px; font-weight:400;"> — {{ algo_desc }}</span>
+    </h1>
+  </div>
+  <a href="{% url 'dashboard' %}" class="btn-ghost" style="font-size:12px;">← BACK</a>
+</div>
+
+<!-- Traversal Type Selector -->
+<div class="card fade-up-2" style="margin-bottom:20px;">
+  <form method="POST">
+    {% csrf_token %}
+    <div style="display:grid; grid-template-columns:1fr auto; gap:16px; align-items:end; margin-bottom:16px;">
+      <div>
+        <label style="display:block; font-size:10px; letter-spacing:2px; color:var(--muted); margin-bottom:8px;">TREE VALUES (comma separated, use null for missing)</label>
+        <input type="text" name="values" value="{{ raw }}" placeholder="1,2,3,4,5,6,7">
+      </div>
+      <button type="submit" class="btn-primary" style="margin-top:20px; letter-spacing:2px;">VISUALIZE</button>
+    </div>
+
+    <!-- Traversal buttons -->
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      {% for t, label, color in traversals %}
+      <button type="submit" name="traversal" value="{{ t }}"
+        style="font-family:var(--font-body); font-size:12px; font-weight:600;
+        padding:8px 20px; border-radius:8px; cursor:pointer; letter-spacing:1px; border:none;
+        background:{% if traversal == t %}#{{ color }}{% else %}var(--card){% endif %};
+        color:{% if traversal == t %}var(--bg){% else %}#{{ color }}{% endif %};
+        border:1px solid #{{ color }}; transition:all 0.2s;">
+        {{ label }}
+      </button>
+      {% endfor %}
+    </div>
+  </form>
+</div>
+
+<!-- Main Layout -->
+<div style="display:grid; grid-template-columns:1fr 260px; gap:20px; margin-bottom:20px;" class="fade-up-3">
+
+  <!-- Tree Canvas -->
+  <div class="card" style="padding:0; overflow:hidden;">
+    <div style="padding:14px 20px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+      <span style="font-family:var(--font-head); font-size:11px; letter-spacing:2px; color:var(--muted);">BINARY TREE</span>
+      <div style="display:flex; gap:14px; font-size:11px;">
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#{{ algo_color }};margin-right:4px;"></span>Current</span>
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--green);margin-right:4px;"></span>Visited</span>
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--card);margin-right:4px;border:1px solid var(--border);"></span>Unvisited</span>
+      </div>
+    </div>
+    <canvas id="treeCanvas" style="width:100%; display:block;"></canvas>
+  </div>
+
+  <!-- Side Panel -->
+  <div style="display:flex; flex-direction:column; gap:14px;">
+
+    <!-- Status -->
+    <div class="card" style="border-color:rgba(0,229,255,0.2);">
+      <div style="font-size:10px; letter-spacing:2px; color:var(--muted); margin-bottom:8px;">STATUS</div>
+      <div id="status-text" style="font-size:11px; color:var(--yellow); line-height:1.7; min-height:48px;">Ready...</div>
+    </div>
+
+    <!-- Traversal Order -->
+    <div class="card">
+      <div style="font-size:10px; letter-spacing:2px; color:#{{ algo_color }}; margin-bottom:10px;">TRAVERSAL ORDER</div>
+      <div id="order-container" style="display:flex; flex-wrap:wrap; gap:5px; min-height:32px;">
+        <span style="color:var(--muted); font-size:12px;">—</span>
+      </div>
+    </div>
+
+    <!-- Call Stack -->
+    <div class="card">
+      <div style="font-size:10px; letter-spacing:2px; color:var(--orange); margin-bottom:10px;">VISIT COUNT</div>
+      <div style="font-family:var(--font-head); font-size:36px; color:var(--orange); text-align:center;" id="visit-count">0</div>
+      <div style="font-size:10px; color:var(--muted); text-align:center;">nodes visited</div>
+    </div>
+
+    <!-- Progress -->
+    <div class="card" style="text-align:center;">
+      <div style="font-size:10px; letter-spacing:2px; color:var(--muted); margin-bottom:6px;">PROGRESS</div>
+      <span style="font-family:var(--font-head); font-size:26px; color:var(--cyan);" id="step-num">0</span>
+      <span style="color:var(--muted);"> / </span>
+      <span style="font-family:var(--font-head); font-size:14px; color:var(--muted);" id="total-steps">0</span>
+    </div>
+
+  </div>
+</div>
+
+<!-- Controls -->
+<div class="fade-up-4" style="display:flex; gap:10px; justify-content:center; align-items:center; flex-wrap:wrap;">
+  <button onclick="prevStep()" class="btn-ghost" style="padding:10px 20px;">⏮ PREV</button>
+  <button onclick="togglePlay()" id="play-btn" class="btn-primary" style="padding:12px 36px; font-size:15px; letter-spacing:3px;">▶ PLAY</button>
+  <button onclick="nextStep()" class="btn-ghost" style="padding:10px 20px;">NEXT ⏭</button>
+  <button onclick="resetViz()" class="btn-ghost" style="padding:10px 20px;">↺ RESET</button>
+  <div style="display:flex; align-items:center; gap:10px; margin-left:10px;">
+    <span style="font-size:10px; color:var(--muted); letter-spacing:2px;">SPEED</span>
+    <input type="range" id="speed-slider" min="200" max="1500" value="800"
+      style="width:100px; accent-color:var(--cyan);">
+  </div>
+</div>
+
+<script>
+const steps     = {{ steps|safe }};
+const nodesData = {{ nodes|safe }};
+const algoColor = '#{{ algo_color }}';
+const finalOrder = {{ final_order|safe }};
+
+let current = 0, playing = false, timer = null;
+
+const canvas = document.getElementById('treeCanvas');
+const ctx    = canvas.getContext('2d');
+
+function resizeCanvas() {
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width  = rect.width;
+  canvas.height = Math.max(320, Math.min(rect.width * 0.55, 420));
+  drawTree(steps[current]);
+}
+
+// ── Compute node positions ────────────────────────────────────
+function getPositions() {
+  const nodeR = Math.max(18, Math.min(24, canvas.width / 32));
+  const pos = {};
+  const nodeKeys = Object.keys(nodesData).map(Number).sort((a,b)=>a-b);
+  if (nodeKeys.length === 0) return {pos, nodeR};
+
+  // Calculate depth of each node
+  const depth = {0: 0};
+  const maxDepth = Math.max(...nodeKeys.map(idx => {
+    let d = 0, i = idx;
+    while (i > 0) { i = Math.floor((i-1)/2); d++; }
+    return depth[idx] = d;
+  }));
+
+  const levelH = Math.min(110, (canvas.height - nodeR*4) / (maxDepth || 1));
+  const pw = canvas.width;
+
+  // For each node, calculate x based on its position within its level
+  nodeKeys.forEach(idx => {
+    const d = depth[idx];
+    const levelCount = Math.pow(2, d);
+    const posInLevel = idx - (Math.pow(2, d) - 1);
+    const cellW = (pw - nodeR*2) / levelCount;
+    pos[String(idx)] = {
+      x: nodeR + cellW * posInLevel + cellW/2,
+      y: nodeR*2 + d * levelH,
+    };
+  });
+
+  return {pos, nodeR};
+}
+
+function drawTree(step) {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const {pos, nodeR} = getPositions();
+
+  // Draw edges first
+  Object.keys(nodesData).forEach(idx => {
+    const node = nodesData[idx];
+    const p = pos[idx];
+    if (!p) return;
+    ['left','right'].forEach(side => {
+      if (node[side] !== null && node[side] !== undefined) {
+        const cp = pos[String(node[side])];
+        if (!cp) return;
+        const isVisitedEdge = step.visited.includes(parseInt(idx)) && step.visited.includes(node[side]);
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        ctx.lineTo(cp.x, cp.y);
+        ctx.strokeStyle = isVisitedEdge ? 'rgba(0,212,160,0.4)' : '#1A3A5C';
+        ctx.lineWidth = isVisitedEdge ? 2 : 1.5;
+        ctx.setLineDash(isVisitedEdge ? [] : [4,3]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+    });
+  });
+
+  // Draw nodes
+  Object.keys(nodesData).forEach(idx => {
+    const node = nodesData[idx];
+    const p = pos[idx];
+    if (!p) return;
+    const iCurrent  = step.current === parseInt(idx);
+    const isVisited = step.visited.includes(parseInt(idx));
+
+    // Glow
+    if (iCurrent) {
+      ctx.beginPath(); ctx.arc(p.x, p.y, nodeR+10, 0, Math.PI*2);
+      const grd = ctx.createRadialGradient(p.x, p.y, nodeR, p.x, p.y, nodeR+14);
+      grd.addColorStop(0, algoColor+'66'); grd.addColorStop(1,'transparent');
+      ctx.fillStyle = grd; ctx.fill();
+    }
+
+    ctx.beginPath(); ctx.arc(p.x, p.y, nodeR, 0, Math.PI*2);
+    let fill = '#0d1f38', stroke = '#1a3a5c', sw = 1.5;
+    if (step.done)       { fill='#004d30'; stroke='#00D4A0'; sw=2.5; }
+    else if (iCurrent)   { fill=algoColor+'33'; stroke=algoColor; sw=3; }
+    else if (isVisited)  { fill='#003d28'; stroke='#00D4A0'; sw=2; }
+
+    ctx.fillStyle=fill; ctx.fill();
+    ctx.strokeStyle=stroke; ctx.lineWidth=sw; ctx.stroke();
+
+    ctx.fillStyle = iCurrent ? algoColor : isVisited ? '#00D4A0' : '#8BAABF';
+    ctx.font = `bold ${Math.round(nodeR*0.7)}px "JetBrains Mono",monospace`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(node.val, p.x, p.y);
+  });
+}
+
+function updatePanel(step) {
+  const el = document.getElementById('status-text');
+  el.textContent = step.status || '';
+  el.style.color = step.done ? '#00D4A0' : algoColor;
+
+  // Order display
+  const oc = document.getElementById('order-container');
+  if (step.visited.length === 0) {
+    oc.innerHTML = '<span style="color:var(--muted);font-size:12px;">—</span>';
+  } else {
+    oc.innerHTML = step.visited.map((idx,i) => `
+      <div style="display:flex;align-items:center;gap:3px;">
+        <div style="background:${step.done?'#004d30':'#0d1f38'};
+          border:1px solid ${step.done?'#00D4A0':algoColor};
+          border-radius:6px;padding:4px 10px;
+          font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:bold;
+          color:${step.done?'#00D4A0':algoColor};">${nodesData[String(idx)]?.val??idx}</div>
+        ${i<step.visited.length-1?`<span style="color:#1a3a5c;font-size:10px;">→</span>`:''}
+      </div>`).join('');
+  }
+
+  document.getElementById('visit-count').textContent = step.visited.length;
+  document.getElementById('step-num').textContent    = current;
+  document.getElementById('total-steps').textContent = steps.length-1;
+}
+
+function render(step) { drawTree(step); updatePanel(step); }
+function getDelay() { return 1700-parseInt(document.getElementById('speed-slider').value); }
+function nextStep() { if(current<steps.length-1){current++;render(steps[current]);}else stopPlay(); }
+function prevStep() { if(current>0){current--;render(steps[current]);} }
+function resetViz() { stopPlay();current=0;render(steps[0]); }
+function togglePlay() { playing?stopPlay():startPlay(); }
+function startPlay() {
+  playing=true; document.getElementById('play-btn').textContent='⏸ PAUSE';
+  timer=setInterval(()=>{if(current<steps.length-1){current++;render(steps[current]);}else stopPlay();},getDelay());
+}
+function stopPlay() {
+  playing=false; document.getElementById('play-btn').textContent='▶ PLAY'; clearInterval(timer);
+}
+window.addEventListener('resize',resizeCanvas);
+resizeCanvas(); render(steps[0]);
+</script>
+{% endblock %}

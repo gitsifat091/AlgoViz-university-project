@@ -7,4 +7,5 @@ urlpatterns = [
     path('sorting/insertion/', views.insertion_sort_view, name='insertion_sort'),
     path('sorting/merge/',     views.merge_sort_view,     name='merge_sort'),
     path('sorting/quick/',     views.quick_sort_view,     name='quick_sort'),
+    path('sorting/tree/', views.tree_traversal_view, name='tree_traversal'),
 ]

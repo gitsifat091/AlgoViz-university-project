@@ -188,3 +188,178 @@ def quick_sort_view(request):
         'algo_name': 'QUICK SORT', 'algo_emoji': '⚡',
         'algo_desc': 'Picks a pivot, partitions array around it, then recursively sorts partitions.',
     })
+    
+    
+    
+    # ─── Tree Traversal ────────────────────────────────────────────
+
+def build_tree(values):
+    """Build binary tree from list (level-order)"""
+    if not values or values[0] is None:
+        return {}
+    nodes = {}
+    for i, val in enumerate(values):
+        if val is not None:
+            left  = 2*i+1 if 2*i+1 < len(values) and values[2*i+1] is not None else None
+            right = 2*i+2 if 2*i+2 < len(values) and values[2*i+2] is not None else None
+            nodes[i] = {'val': val, 'left': left, 'right': right}
+    return nodes
+
+
+def inorder_steps(nodes, root=0):
+    steps = []
+    order = []
+    def inorder(i):
+        if i is None or i not in nodes:
+            return
+        inorder(nodes[i]['left'])
+        order.append(i)
+        steps.append({
+            'current': i, 'visited': list(order),
+            'highlight': list(order),
+            'status': f'Inorder: Visit node {nodes[i]["val"]} (Left→Root→Right)',
+            'done': False
+        })
+        inorder(nodes[i]['right'])
+    inorder(root)
+    steps.append({'current': None, 'visited': list(order), 'highlight': list(order),
+                  'status': f'✅ Inorder Complete! Order: {[nodes[i]["val"] for i in order]}', 'done': True})
+    return steps, order
+
+
+def preorder_steps(nodes, root=0):
+    steps = []
+    order = []
+    def preorder(i):
+        if i is None or i not in nodes:
+            return
+        order.append(i)
+        steps.append({
+            'current': i, 'visited': list(order),
+            'highlight': list(order),
+            'status': f'Preorder: Visit node {nodes[i]["val"]} (Root→Left→Right)',
+            'done': False
+        })
+        preorder(nodes[i]['left'])
+        preorder(nodes[i]['right'])
+    preorder(root)
+    steps.append({'current': None, 'visited': list(order), 'highlight': list(order),
+                  'status': f'✅ Preorder Complete! Order: {[nodes[i]["val"] for i in order]}', 'done': True})
+    return steps, order
+
+
+def postorder_steps(nodes, root=0):
+    steps = []
+    order = []
+    def postorder(i):
+        if i is None or i not in nodes:
+            return
+        postorder(nodes[i]['left'])
+        postorder(nodes[i]['right'])
+        order.append(i)
+        steps.append({
+            'current': i, 'visited': list(order),
+            'highlight': list(order),
+            'status': f'Postorder: Visit node {nodes[i]["val"]} (Left→Right→Root)',
+            'done': False
+        })
+    postorder(root)
+    steps.append({'current': None, 'visited': list(order), 'highlight': list(order),
+                  'status': f'✅ Postorder Complete! Order: {[nodes[i]["val"] for i in order]}', 'done': True})
+    return steps, order
+
+
+def levelorder_steps(nodes, root=0):
+    from collections import deque
+    steps = []
+    order = []
+    queue = deque([root])
+    while queue:
+        i = queue.popleft()
+        if i not in nodes:
+            continue
+        order.append(i)
+        steps.append({
+            'current': i, 'visited': list(order),
+            'highlight': list(order),
+            'queue': list(queue),
+            'status': f'Level Order: Visit node {nodes[i]["val"]}',
+            'done': False
+        })
+        if nodes[i]['left'] is not None:
+            queue.append(nodes[i]['left'])
+        if nodes[i]['right'] is not None:
+            queue.append(nodes[i]['right'])
+    steps.append({'current': None, 'visited': list(order), 'highlight': list(order),
+                  'queue': [],
+                  'status': f'✅ Level Order Complete! Order: {[nodes[i]["val"] for i in order]}', 'done': True})
+    return steps, order
+
+
+DEFAULT_TREE = [1, 2, 3, 4, 5, 6, 7]
+
+def parse_tree_input(raw):
+    result = []
+    for x in raw.split(','):
+        x = x.strip()
+        if x.lower() in ('null', 'none', ''):
+            result.append(None)
+        else:
+            try:
+                result.append(int(x))
+            except:
+                pass
+    return result if result else DEFAULT_TREE
+
+
+@login_required
+def tree_traversal_view(request):
+    values = DEFAULT_TREE
+    traversal = 'inorder'
+    raw = '1,2,3,4,5,6,7'
+
+    if request.method == 'POST':
+        raw = request.POST.get('values', '1,2,3,4,5,6,7')
+        traversal = request.POST.get('traversal', 'inorder')
+        values = parse_tree_input(raw)[:15]
+
+    nodes = build_tree(values)
+
+    if traversal == 'preorder':
+        steps, order = preorder_steps(nodes)
+        algo_name = 'PREORDER'
+        algo_desc = 'Root → Left → Right'
+        color = '00C8FF'
+    elif traversal == 'postorder':
+        steps, order = postorder_steps(nodes)
+        algo_name = 'POSTORDER'
+        algo_desc = 'Left → Right → Root'
+        color = 'FF8C42'
+    elif traversal == 'levelorder':
+        steps, order = levelorder_steps(nodes)
+        algo_name = 'LEVEL ORDER'
+        algo_desc = 'Level by Level (BFS)'
+        color = 'a855f7'
+    else:
+        steps, order = inorder_steps(nodes)
+        algo_name = 'INORDER'
+        algo_desc = 'Left → Root → Right'
+        color = '00D4A0'
+
+    return render(request, 'sorting/tree_traversal.html', {
+        'steps': json.dumps(steps),
+        'nodes': json.dumps({str(k): v for k, v in nodes.items()}),
+        'values': values,
+        'raw': raw,
+        'traversal': traversal,
+        'algo_name': algo_name,
+        'algo_desc': algo_desc,
+        'algo_color': color,
+        'final_order': json.dumps([nodes[i]['val'] for i in order]),
+        'traversals': [
+            ('inorder',    '🟢 Inorder',    '00D4A0'),
+            ('preorder',   '🔵 Preorder',   '00C8FF'),
+            ('postorder',  '🟠 Postorder',  'FF8C42'),
+            ('levelorder', '🟣 Level Order','a855f7'),
+        ],
+    })
