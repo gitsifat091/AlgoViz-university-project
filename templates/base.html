@@ -7,7 +7,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=JetBrains+Mono:wght@300;400;600&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg:       #050d1a;
+      --bg:       #050d1a; 
       --bg2:      #0a1628;
       --card:     #0d1f38;
       --border:   #1a3a5c;
@@ -64,7 +64,7 @@
       border-color: #e2e8f0;
     }
     body.light .card:hover {
-      box-shadow: 0 8px 24px rgba(0, 119, 170, 0.15), 0 2px 8px rgba(0, 0, 0, 0.08);
+      box-shadow: 0 8px 24px rgba(0, 119, 170, 0.15), 0 2px 8px rgba(23, 69, 156, 0.84);
       border-color: var(--cyan);
     }
 
@@ -188,7 +188,7 @@
     }
     .card:hover {
       border-color: rgba(0,229,255,0.3);
-      box-shadow: 0 8px 32px rgba(0,229,255,0.08);
+      box-shadow: 0 8px 32px rgba(0, 229, 255, 0.62);
     }
 
     /* BUTTONS */
@@ -277,7 +277,8 @@
     .fade-up-4 { animation: fadeUp 0.5s 0.3s ease both; }
   </style>
 </head>
-<script>
+
+{% comment %} <script>
   // Load saved theme
   const saved = localStorage.getItem('theme') || 'dark';
   if (saved === 'light') {
@@ -296,12 +297,50 @@
       localStorage.setItem('theme', 'dark');
     }
   }
+</script> {% endcomment %}
+
+<script>
+  // Apply theme IMMEDIATELY on load
+  function applyTheme(theme) {
+    if (theme === 'light') {
+      document.body.classList.add('light');
+      const btn = document.getElementById('theme-btn');
+      if (btn) btn.textContent = '☀️ Light';
+    } else {
+      document.body.classList.remove('light');
+      const btn = document.getElementById('theme-btn');
+      if (btn) btn.textContent = '🌙 Dark';
+    }
+  }
+
+  // Load on page start
+  applyTheme(localStorage.getItem('theme') || 'dark');
+
+  function toggleTheme() {
+    const isLight = document.body.classList.contains('light');
+    const newTheme = isLight ? 'dark' : 'light';
+    localStorage.setItem('theme', newTheme);
+    applyTheme(newTheme);
+    // Stop event from propagating
+    event.stopPropagation();
+  }
+
+  // Prevent any click elsewhere from toggling theme
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('#theme-btn')) return;
+  });
 </script>
+
 <body>
   <nav>
-    <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn">
+    {% comment %} <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn">
       🌙 Dark
-    </button> 
+    </button>  {% endcomment %}
+
+    <button class="theme-toggle" onclick="toggleTheme(event)" id="theme-btn" type="button">
+      🌙 Dark
+    </button>
+
     <a href="{% url 'dashboard' %}" class="nav-logo">ALGO<span>VIZ</span></a>
     <div class="nav-right">
       {% if user.is_authenticated %}
