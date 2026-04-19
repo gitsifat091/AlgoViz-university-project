@@ -4,6 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AlgoViz</title>
+
+  <script>
+    if (localStorage.getItem('theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  </script>
+
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=JetBrains+Mono:wght@300;400;600&display=swap" rel="stylesheet">
   <style>
     :root {
@@ -45,7 +52,7 @@
     }
 
     /* Light Mode */
-    body.light {
+    html.light body {
       --bg:       #f0f4f8;
       --bg2:      #e2e8f0;
       --card:     #ffffff;
@@ -59,30 +66,30 @@
       --muted:    #64748b;
       color-scheme: light;
     }
-    body.light .card {
+    html.light body .card {
       box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.06);
       border-color: #e2e8f0;
     }
-    body.light .card:hover {
+    html.light body .card:hover {
       box-shadow: 0 8px 24px rgba(0, 119, 170, 0.15), 0 2px 8px rgba(23, 69, 156, 0.84);
       border-color: var(--cyan);
     }
 
-    body.light::before {
+    html.light body::before {
       background-image:
         linear-gradient(rgba(0,119,170,0.06) 1px, transparent 1px),
         linear-gradient(90deg, rgba(0,119,170,0.06) 1px, transparent 1px);
     }
-    body.light::after {
+    html.light body::after {
       background: radial-gradient(circle, rgba(0,119,170,0.06) 0%, transparent 70%);
     }
-    body.light nav {
+    html.light body nav {
       background: rgba(240,244,248,0.92);
       border-bottom: 1px solid #cbd5e1;
     }
-    body.light input[type=text],
-    body.light input[type=password],
-    body.light input[type=number] {
+    html.light body input[type=text],
+    html.light body input[type=password],
+    html.light body input[type=number] {
       background: #f8fafc;
       color: #0f172a;
       border-color: #cbd5e1;
@@ -299,7 +306,7 @@
   }
 </script> {% endcomment %}
 
-<script>
+{% comment %} <script>
   // Apply theme IMMEDIATELY on load
   function applyTheme(theme) {
     if (theme === 'light') {
@@ -329,6 +336,19 @@
   document.addEventListener('click', function(e) {
     if (!e.target.closest('#theme-btn')) return;
   });
+</script> {% endcomment %}
+
+<script>
+  function toggleTheme() {
+    const isLight = document.documentElement.classList.toggle('light');
+    document.getElementById('theme-btn').textContent = isLight ? '☀️ Light' : '🌙 Dark';
+    localStorage.setItem('theme', isLight ? 'light' : 'dark');
+  }
+
+  // Set button text on load
+  if (document.documentElement.classList.contains('light')) {
+    document.getElementById('theme-btn').textContent = '☀️ Light';
+  }
 </script>
 
 <body>
@@ -337,7 +357,11 @@
       🌙 Dark
     </button>  {% endcomment %}
 
-    <button class="theme-toggle" onclick="toggleTheme(event)" id="theme-btn" type="button">
+    {% comment %} <button class="theme-toggle" onclick="toggleTheme(event)" id="theme-btn" type="button">
+      🌙 Dark
+    </button> {% endcomment %}
+
+    <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn" type="button">
       🌙 Dark
     </button>
 
